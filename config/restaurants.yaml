@@ -75,3 +75,9 @@ restaurants:
     item_selector: "[data-daily-menu-item]"
     content_selector: "main"
     logo_url: "https://www.lasadelitas.cz/data/themes/lasadelitas/img/logo-lasadelitas.png"
+
+  - name: "Sia"
+    url: "https://www.siarestaurant.cz/menu/"
+    adapter: "menubot"
+    menubot_hash: "sia484626412569856654"
+    logo_url: "https://cdn.myshoptet.com/usr/www.siarestaurant.cz/user/logos/sialogo.svg"

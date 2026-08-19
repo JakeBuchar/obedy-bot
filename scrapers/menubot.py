@@ -57,6 +57,8 @@ def fetch_menubot_menu(menubot_hash: str, lang: str = "_a", timeout: int = 20) -
 
     items = _parse_category_tables(soup)
     if not items:
+        items = _parse_category_strong_items(soup)
+    if not items:
         items = _parse_semantic_boxes(soup)
     if not items:
         items = _parse_heading_paragraph_pairs(soup)
@@ -133,6 +135,15 @@ def _parse_semantic_boxes(soup: BeautifulSoup) -> list[MenuItem]:
     return items
 
 
+def _is_hidden_week_day(tag) -> bool:
+    """Some menubot templates (e.g. Sia) publish the whole week in one HTML
+    payload and only hide the non-today days client-side via a "hideweek"
+    class (toggled by a "show whole week" JS button), so a pure HTML parse
+    would otherwise pick up every day's items mixed together.
+    """
+    return "hideweek" in (tag.get("class") or [])
+
+
 def _parse_category_tables(soup: BeautifulSoup) -> list[MenuItem]:
     """Hybernská-style: <div class="dm-cat"><div class="dm-cat-header">
     <div class="dm-cat-title"><h2>category</h2></div></div><div class="dm-item">
@@ -143,16 +154,20 @@ def _parse_category_tables(soup: BeautifulSoup) -> list[MenuItem]:
     items: list[MenuItem] = []
     category = ""
     for cat_block in soup.select(".dm-cat"):
+        if _is_hidden_week_day(cat_block):
+            continue
         title_tag = cat_block.select_one(".dm-cat-title h2")
         if title_tag:
             category = title_tag.get_text(strip=True)
 
         for item_block in cat_block.select(".dm-item"):
             name_tag = item_block.find("h3")
-            if not name_tag:
+            cells = item_block.select("table td")
+            if not name_tag or len(cells) < 2:
+                # No <table> here means this is actually the Sia-style layout
+                # (see _parse_category_strong_items) - leave it for that parser.
                 continue
 
-            cells = item_block.select("table td")
             price = cells[-1].get_text(strip=True) if len(cells) >= 2 else ""
 
             paragraphs = [
@@ -168,6 +183,49 @@ def _parse_category_tables(soup: BeautifulSoup) -> list[MenuItem]:
                 MenuItem(
                     name=name_tag.get_text(strip=True),
                     description=" ".join(paragraphs),
+                    price=price,
+                    category=category,
+                    allergens=allergens,
+                )
+            )
+    return items
+
+
+def _parse_category_strong_items(soup: BeautifulSoup) -> list[MenuItem]:
+    """Sia-style: <div class="dm-cat"><div class="dm-cat-header"><div class="dm-cat-title">
+    <h2>category</h2></div></div><div class="dm-item"><div class="dm-content"><h3>name</h3>
+    <p>desc (often empty)</p><strong class="alerg">price&nbsp;&nbsp;&nbsp;allergens</strong>
+    <strong class="special"></strong></div></div></div> repeated, with price and allergens
+    packed into a single <strong class="alerg"> tag separated by a run of &nbsp; chars.
+    """
+    items: list[MenuItem] = []
+    category = ""
+    for cat_block in soup.select(".dm-cat"):
+        if _is_hidden_week_day(cat_block):
+            continue
+        title_tag = cat_block.select_one(".dm-cat-title h2")
+        if title_tag:
+            category = title_tag.get_text(strip=True)
+
+        for item_block in cat_block.select(".dm-item"):
+            content = item_block.select_one(".dm-content")
+            name_tag = content.find("h3") if content else None
+            alerg_tag = content.select_one("strong.alerg") if content else None
+            if not name_tag or alerg_tag is None:
+                continue
+
+            description = " ".join(
+                p.get_text(strip=True) for p in content.find_all("p") if p.get_text(strip=True)
+            )
+
+            parts = re.split(r"\s{2,}", alerg_tag.get_text(strip=True))
+            price = parts[0] if parts else ""
+            allergens = " ".join(parts[1:])
+
+            items.append(
+                MenuItem(
+                    name=name_tag.get_text(strip=True),
+                    description=description,
                     price=price,
                     category=category,
                     allergens=allergens,
