@@ -1,0 +1,77 @@
+# Each restaurant needs an "adapter" that knows how to fetch/parse its menu.
+#
+# adapter: menubot
+#   Covers any restaurant using the menubot.cz widget (very common for CZ
+#   restaurants). Find the hash by opening the restaurant's menu page,
+#   viewing page source (Ctrl+U) and searching for "menubot.cz/app/users/".
+#   The hash is the part right after "/users/" and before "/export" or "/images".
+#
+# adapter: html
+#   Generic fallback for restaurants with the menu directly in their own
+#   page HTML (no external widget). Needs a CSS "item_selector" that matches
+#   each menu item block on the page. Optional "content_selector" scopes the
+#   page to a sub-region (e.g. "main") so the raw-text fallback isn't full of
+#   nav/footer boilerplate when the site publishes the menu only as an image
+#   (in which case item_selector is deliberately set to something that never
+#   matches, e.g. "[data-daily-menu-item]").
+#
+# adapter: choiceqr
+#   Restaurants using the ChoiceQR ordering platform (choiceqr.com). Needs
+#   "choiceqr_url" pointing at the restaurant's daily-menu section on
+#   *.choiceqr.com (e.g. .../section:poledni-menu); "url" stays the
+#   restaurant's own website for the email link.
+#
+# image_selector (optional, "html" adapter only)
+#   When the daily menu is published purely as a photo (no text markup to
+#   scrape), the "html" adapter auto-detects the menu photo on every run by
+#   looking inside content_selector for the <img> whose filename/alt text
+#   mentions "menu", falling back to the visually largest <img> there (see
+#   scrapers/generic_html.py::_find_menu_image_url). render.py then embeds
+#   whatever URL was found, so it never goes stale when the restaurant
+#   uploads next week's photo under a new filename. Set image_selector to a
+#   precise CSS selector only if a restaurant's page ever needs to override
+#   that heuristic.
+
+restaurants:
+  - name: "FUZE Praha"
+    url: "https://www.fuzepraha.cz/menu/denni-menu/"
+    adapter: "menubot"
+    menubot_hash: "fuze95198961165899562563569999"
+    logo_url: "https://www.fuzepraha.cz/app/themes/ipress/build/files/favicons/fuze/apple-touch-icon.png"
+
+  - name: "Han.sik"
+    url: "https://ihansik.cz/"
+    adapter: "menubot"
+    menubot_hash: "hansik659595959494952622331"
+    logo_url: "https://ihansik.cz/wp-content/uploads/2025/11/hansik-restaurant-10.jpg"
+
+  - name: "Restaurace Hybernská"
+    url: "https://www.restauracehybernska.cz/"
+    adapter: "menubot"
+    menubot_hash: "hybernska759632459849849849"
+    logo_url: "https://cdn.myshoptet.com/usr/www.restauracehybernska.cz/user/logos/logo-black.png"
+
+  - name: "Masaryčka Restaurace"
+    url: "https://www.masaryckarestaurace.cz/"
+    adapter: "choiceqr"
+    choiceqr_url: "https://masaryckarestaurace.choiceqr.com/section:poledni-menu"
+    logo_url: "https://www.masaryckarestaurace.cz/apple-touch-icon.png"
+
+  - name: "Pizzerie Mikulka"
+    url: "https://pizzeriemikulka.cz/poledni-menu/"
+    adapter: "html"
+    # Denní menu se zveřejňuje jen jako fotka týdenní nabídky (JPG), žádné
+    # jednotlivé položky proto nejdou z HTML rozparsovat - item_selector
+    # cíleně nic nenajde, e-mail místo textu zobrazí přímo fotku menu.
+    item_selector: "[data-daily-menu-item]"
+    content_selector: "article"
+    logo_url: "https://pizzeriemikulka.cz/wp-content/uploads/2023/01/371.jpg"
+
+  - name: "La Sadelitas"
+    url: "https://www.lasadelitas.cz/denni-menu/"
+    adapter: "html"
+    # Denní menu je publikováno jen jako obrázek (PNG), bez textové podoby -
+    # item_selector cíleně nic nenajde, e-mail místo textu zobrazí přímo fotku menu.
+    item_selector: "[data-daily-menu-item]"
+    content_selector: "main"
+    logo_url: "https://www.lasadelitas.cz/data/themes/lasadelitas/img/logo-lasadelitas.png"
