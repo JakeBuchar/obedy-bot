@@ -11,8 +11,10 @@ Add --dry-run to skip sending the email and just print the result.
 """
 from __future__ import annotations
 
+import os
 import sys
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -23,6 +25,11 @@ from scrapers.generic_html import fetch_generic_menu
 from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
+TARGET_LOCAL_HOUR = 10  # see daily-menu.yml for why two crons feed into this check
+
+
+def is_target_local_hour() -> bool:
+    return datetime.now(ZoneInfo("Europe/Prague")).hour == TARGET_LOCAL_HOUR
 
 
 def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
@@ -73,6 +80,15 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8")
 
     dry_run = "--dry-run" in sys.argv
+
+    # The GitHub Actions workflow schedules cron triggers for both possible
+    # UTC offsets of 10:00 Europe/Prague (CEST/CET) so delivery time doesn't
+    # drift across DST changes; whichever one fires outside the real local
+    # 10:00 hour is a no-op. Manual runs (workflow_dispatch) and local runs
+    # always go through, so testing is never blocked by the time of day.
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and not is_target_local_hour():
+        print("Skipping: this cron fires at the other DST offset, not the local 10:00 send.")
+        return
 
     restaurants = load_restaurants()
     results = scrape_all(restaurants)

@@ -94,12 +94,14 @@ python main.py
 
 3. V záložce **Actions** můžete workflow "Daily lunch menu email" spustit
    manuálně (`workflow_dispatch` / tlačítko "Run workflow") a hned zkontrolovat,
-   že e-mail dorazí. Jinak se spustí automaticky v 8:00 UTC každý všední den.
+   že e-mail dorazí. Jinak se spustí automaticky v 10:00 (Europe/Prague) každý
+   všední den, po celý rok stejně bez ohledu na letní/zimní čas – cron v
+   GitHub Actions běží v UTC, tak jsou naplánované dva časy (pro oba možné
+   UTC posuny) a `main.py` si při spuštění přes cron ověří skutečný místní
+   čas; ten "špatný" jen tiše skončí bez odeslání.
 
 ## Známá omezení
 
-- Čas cronu je v UTC, takže se čas doručení v Česku posune o hodinu při
-  přechodu na letní/zimní čas (max. rozdíl 1 h, pro tento účel není kritické).
 - Pokud restaurace změní šablonu svého webu/widgetu, parser pro ni může
   přestat fungovat – v tom případě e-mail zobrazí chybu nebo surový text
   a je potřeba upravit `scrapers/menubot.py` nebo `generic_html.py`.

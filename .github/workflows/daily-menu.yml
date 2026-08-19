@@ -2,8 +2,16 @@ name: Daily lunch menu email
 
 "on":
   schedule:
-    # 08:00 UTC = 10:00 CEST / 09:00 CET, Mon-Fri only.
-    - cron: "0 8 * * 1-5"
+    # Cron always runs in UTC, and Europe/Prague alternates between UTC+2
+    # (CEST, roughly late Mar - late Oct) and UTC+1 (CET, the rest of the
+    # year), so a single fixed cron would drift by an hour twice a year.
+    # Instead we schedule both UTC offsets that could correspond to 10:00
+    # local time; main.py checks the *actual* local time at run time and
+    # only sends on the one that's really 10:00 Europe/Prague, the other
+    # is a same-day no-op. This keeps delivery pinned to 10:00 year-round
+    # without ever needing to touch this file again.
+    - cron: "0 8 * * 1-5" # 10:00 CEST
+    - cron: "0 9 * * 1-5" # 10:00 CET
   workflow_dispatch: {}
 
 jobs:
@@ -22,6 +30,7 @@ jobs:
       - name: Send menu email
         run: python main.py
         env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
