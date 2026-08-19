@@ -15,7 +15,7 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 - `email_sender.py` – odešle e-mail přes SMTP.
 - `main.py` – vše spustí a odešle.
 - `.github/workflows/daily-menu.yml` – naplánuje spuštění každý všední den
-  v 9:00 (léto) / 8:00 (zima) přes GitHub Actions – běží zadarmo, i když je
+  v 10:00 (léto) / 9:00 (zima) přes GitHub Actions – běží zadarmo, i když je
   počítač vypnutý.
 
 ## Jak přidat další restauraci
@@ -94,7 +94,7 @@ python main.py
 
 3. V záložce **Actions** můžete workflow "Daily lunch menu email" spustit
    manuálně (`workflow_dispatch` / tlačítko "Run workflow") a hned zkontrolovat,
-   že e-mail dorazí. Jinak se spustí automaticky v 7:00 UTC každý všední den.
+   že e-mail dorazí. Jinak se spustí automaticky v 8:00 UTC každý všední den.
 
 ## Známá omezení
 
