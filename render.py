@@ -12,6 +12,7 @@ clients consistently honor.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from html import escape
 
 from scrapers.menubot import Menu
@@ -20,7 +21,14 @@ FONT = "Arial, Helvetica, sans-serif"
 ACCENT = "#b5321a"
 
 
-def render_text(results: list[dict]) -> str:
+def _format_generated_at(generated_at: datetime) -> str:
+    return (
+        f"Vygenerováno {generated_at.day}.{generated_at.month}.{generated_at.year} "
+        f"v {generated_at:%H:%M} · Vytvořil JakeBuchar"
+    )
+
+
+def render_text(results: list[dict], generated_at: datetime | None = None) -> str:
     lines = []
     for r in results:
         lines.append(f"== {r['name']} ==")
@@ -42,6 +50,8 @@ def render_text(results: list[dict]) -> str:
         else:
             lines.append(f"  (nerozpoznáno, surový text): {menu.raw_text[:400]}")
         lines.append("")
+    if generated_at:
+        lines.append(_format_generated_at(generated_at))
     return "\n".join(lines)
 
 
@@ -89,7 +99,7 @@ def _item_html(item) -> str:
     )
 
 
-def render_html(results: list[dict]) -> str:
+def render_html(results: list[dict], generated_at: datetime | None = None) -> str:
     sections = []
     for r in results:
         name = escape(r["name"])
@@ -140,6 +150,13 @@ def render_html(results: list[dict]) -> str:
 
         sections.append(_card_html(header, "".join(body_parts)))
 
+    footer_html = (
+        f'<div style="color:#aaa;font-size:11px;font-family:{FONT};margin-top:4px;">'
+        f"{escape(_format_generated_at(generated_at))}</div>"
+        if generated_at
+        else ""
+    )
+
     return f"""<!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -153,6 +170,7 @@ def render_html(results: list[dict]) -> str:
 <tr><td style="padding:24px 16px;">
 <h1 style="font-size:20px;color:#444;font-family:{FONT};margin:0 0 16px;">🍽️ Dnešní obědové menu</h1>
 {"".join(sections)}
+{footer_html}
 </td></tr>
 </table>
 </td></tr>

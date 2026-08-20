@@ -93,8 +93,9 @@ def main() -> None:
     restaurants = load_restaurants()
     results = scrape_all(restaurants)
 
-    text_body = render_text(results)
-    html_body = render_html(results)
+    generated_at = datetime.now(ZoneInfo("Europe/Prague"))
+    text_body = render_text(results, generated_at)
+    html_body = render_html(results, generated_at)
 
     if dry_run:
         print(text_body)
