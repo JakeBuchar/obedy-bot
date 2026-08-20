@@ -34,7 +34,8 @@ def is_target_local_hour() -> bool:
 
 def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
     with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)["restaurants"]
+        restaurants = yaml.safe_load(f)["restaurants"]
+    return sorted(restaurants, key=lambda r: r["name"].casefold())
 
 
 def scrape_all(restaurants: list[dict]) -> list[dict]:
