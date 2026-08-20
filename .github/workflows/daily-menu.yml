@@ -17,8 +17,8 @@ name: Daily lunch menu email
     # congested slot on all of GitHub Actions (sometimes delayed by 30+
     # minutes or dropped for that day entirely). Off-peak minutes like
     # :13 run reliably on time.
-    - cron: "13 8 * * 1-5" # ~10:13 CEST
-    - cron: "13 9 * * 1-5" # ~10:13 CET
+    - cron: "15 9 * * 1-5" # TEMP TEST after making repo public - revert to 13 8/9 after confirming
+    - cron: "15 10 * * 1-5" # TEMP TEST after making repo public - revert to 13 8/9 after confirming
   workflow_dispatch: {}
 
 jobs:
