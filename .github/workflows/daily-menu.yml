@@ -10,8 +10,15 @@ name: Daily lunch menu email
     # only sends on the one that's really 10:00 Europe/Prague, the other
     # is a same-day no-op. This keeps delivery pinned to 10:00 year-round
     # without ever needing to touch this file again.
-    - cron: "0 8 * * 1-5" # 10:00 CEST
-    - cron: "0 9 * * 1-5" # 10:00 CET
+    #
+    # Minute is deliberately :13, not :00 - GitHub's own docs warn that
+    # scheduled workflows "may be delayed during periods of high load...
+    # the start of every hour", and on-the-hour crons are the single most
+    # congested slot on all of GitHub Actions (sometimes delayed by 30+
+    # minutes or dropped for that day entirely). Off-peak minutes like
+    # :13 run reliably on time.
+    - cron: "13 8 * * 1-5" # ~10:13 CEST
+    - cron: "13 9 * * 1-5" # ~10:13 CET
   workflow_dispatch: {}
 
 jobs:
