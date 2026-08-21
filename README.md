@@ -15,8 +15,8 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 - `email_sender.py` – odešle e-mail přes SMTP.
 - `main.py` – vše spustí a odešle.
 - `.github/workflows/daily-menu.yml` – naplánuje spuštění každý všední den
-  v 10:00 (léto) / 9:00 (zima) přes GitHub Actions – běží zadarmo, i když je
-  počítač vypnutý.
+  v 9:33 (Europe/Prague, po celý rok stejně) přes GitHub Actions – běží
+  zadarmo, i když je počítač vypnutý.
 
 ## Jak přidat další restauraci
 
@@ -94,11 +94,18 @@ python main.py
 
 3. V záložce **Actions** můžete workflow "Daily lunch menu email" spustit
    manuálně (`workflow_dispatch` / tlačítko "Run workflow") a hned zkontrolovat,
-   že e-mail dorazí. Jinak se spustí automaticky v 10:00 (Europe/Prague) každý
+   že e-mail dorazí. Jinak se spustí automaticky v 9:33 (Europe/Prague) každý
    všední den, po celý rok stejně bez ohledu na letní/zimní čas – cron v
    GitHub Actions běží v UTC, tak jsou naplánované dva časy (pro oba možné
-   UTC posuny) a `main.py` si při spuštění přes cron ověří skutečný místní
-   čas; ten "špatný" jen tiše skončí bez odeslání.
+   UTC posuny) a `main.py` podle toho, který cron se spustil, pozná, který
+   z nich k aktuálnímu posunu patří; ten "špatný" jen tiše skončí bez odeslání.
+
+   **Pozor:** 9:33 je nejdřívější možný čas odeslání, ne přesný. GitHub
+   garantuje jen to, že naplánovaný běh spustí *nejdřív* v daný čas, a na
+   sdílených runnerech běžně nabírá 30–60 minut zpoždění (21. 8. 2026 se
+   běh spustil o 45 minut později). Proto je čas nastavený s rezervou
+   dopředu a kontrola v `main.py` zpoždění tiše toleruje – e-mail dorazí
+   i tehdy, když se běh přelije do další hodiny.
 
 ## Známá omezení
 
