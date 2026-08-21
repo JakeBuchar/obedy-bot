@@ -5,20 +5,20 @@ name: Daily lunch menu email
     # Cron always runs in UTC, and Europe/Prague alternates between UTC+2
     # (CEST, roughly late Mar - late Oct) and UTC+1 (CET, the rest of the
     # year), so a single fixed cron would drift by an hour twice a year.
-    # Instead we schedule both UTC offsets that could correspond to 10:00
-    # local time; main.py checks the *actual* local time at run time and
-    # only sends on the one that's really 10:00 Europe/Prague, the other
-    # is a same-day no-op. This keeps delivery pinned to 10:00 year-round
-    # without ever needing to touch this file again.
+    # Instead we schedule both UTC offsets that could correspond to 9:33
+    # local time and pass the fired cron to main.py, which sends only on
+    # the one matching the current offset; the other is a same-day no-op.
+    # This keeps delivery pinned to 9:33 year-round without ever needing
+    # to touch this file again.
     #
-    # Minute is deliberately :13, not :00 - GitHub's own docs warn that
-    # scheduled workflows "may be delayed during periods of high load...
-    # the start of every hour", and on-the-hour crons are the single most
-    # congested slot on all of GitHub Actions (sometimes delayed by 30+
-    # minutes or dropped for that day entirely). Off-peak minutes like
-    # :13 run reliably on time.
-    - cron: "13 8 * * 1-5" # ~10:13 CEST
-    - cron: "13 9 * * 1-5" # ~10:13 CET
+    # The target is early on purpose: GitHub only guarantees that a
+    # scheduled workflow starts *at or after* its cron time, and delays of
+    # 30-60 minutes happen regularly on shared runners (2026-08-21 fired 45
+    # minutes late), so the send time is effectively a floor, not an exact
+    # time. Minute is off the hour because :00 is the most congested slot
+    # on all of GitHub Actions and gets delayed the hardest.
+    - cron: "33 7 * * 1-5" # ~9:33 CEST
+    - cron: "33 8 * * 1-5" # ~9:33 CET
   workflow_dispatch: {}
 
 jobs:
@@ -38,6 +38,7 @@ jobs:
         run: python main.py
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
