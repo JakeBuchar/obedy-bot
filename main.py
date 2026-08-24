@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timedelta
+import time
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -26,37 +27,37 @@ from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
 PRAGUE = ZoneInfo("Europe/Prague")
-# See daily-menu.yml for why two crons feed into this check.
 TARGET_LOCAL_HOUR = 9
 TARGET_LOCAL_MINUTE = 33
 
 
-def is_matching_cron(cron: str, now: datetime) -> bool:
-    """Is `cron` the one scheduled for Prague's currently active UTC offset?
-
-    Deciding from the cron expression rather than from the clock keeps the
-    send working when GitHub starts the job late, which it routinely does by
-    half an hour or more.
-    """
-    cron_utc_hour = int(cron.split()[1])
-    offset_hours = int(now.utcoffset().total_seconds() // 3600)
-    return cron_utc_hour == (TARGET_LOCAL_HOUR - offset_hours) % 24
-
-
-def should_send_now(now: datetime | None = None) -> bool:
+def seconds_until_target(now: datetime | None = None) -> float:
+    """How long until today's send time in Prague; 0 if it already passed."""
     now = now or datetime.now(PRAGUE)
-
-    cron = os.environ.get("GITHUB_EVENT_SCHEDULE", "").strip()
-    if cron:
-        return is_matching_cron(cron, now)
-
-    # No cron expression available: fall back to the clock, accepting the
-    # whole hour that starts at the target time. That still rules out the
-    # other offset's run (exactly one hour off) while tolerating delay.
     target = now.replace(
         hour=TARGET_LOCAL_HOUR, minute=TARGET_LOCAL_MINUTE, second=0, microsecond=0
     )
-    return timedelta(0) <= now - target < timedelta(hours=1)
+    return max(0.0, (target - now).total_seconds())
+
+
+def wait_for_target_time() -> None:
+    """Hold the job until the send time.
+
+    The workflow is scheduled well before the send time because GitHub only
+    promises to start a scheduled run *at or after* its cron time and in
+    practice runs up to an hour late. Waiting here means the delivery time
+    depends on this clock rather than on when the runner happened to boot.
+    """
+    delay = seconds_until_target()
+    if not delay:
+        print("Runner started past the send time, sending right away.", flush=True)
+        return
+    print(
+        f"Runner started early, waiting {delay / 60:.0f} min until "
+        f"{TARGET_LOCAL_HOUR}:{TARGET_LOCAL_MINUTE:02d} Europe/Prague.",
+        flush=True,
+    )
+    time.sleep(delay)
 
 
 def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
@@ -109,15 +110,13 @@ def main() -> None:
 
     dry_run = "--dry-run" in sys.argv
 
-    # The GitHub Actions workflow schedules cron triggers for both possible
-    # UTC offsets of 9:33 Europe/Prague (CEST/CET) so delivery time doesn't
-    # drift across DST changes; the one belonging to the inactive offset is
-    # a no-op. Manual runs (workflow_dispatch) and local runs always go
-    # through, so testing is never blocked by the time of day.
-    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and not should_send_now():
-        print("Skipping: this cron belongs to the other DST offset, not today's send.")
-        return
+    # Only scheduled runs wait for the send time; manual runs
+    # (workflow_dispatch) and local runs send immediately, so testing is
+    # never blocked by the time of day.
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and not dry_run:
+        wait_for_target_time()
 
+    # Scraped after the wait so the menus are as fresh as the email claims.
     restaurants = load_restaurants()
     results = scrape_all(restaurants)
 

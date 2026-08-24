@@ -2,28 +2,29 @@ name: Daily lunch menu email
 
 "on":
   schedule:
-    # Cron always runs in UTC, and Europe/Prague alternates between UTC+2
-    # (CEST, roughly late Mar - late Oct) and UTC+1 (CET, the rest of the
-    # year), so a single fixed cron would drift by an hour twice a year.
-    # Instead we schedule both UTC offsets that could correspond to 9:33
-    # local time and pass the fired cron to main.py, which sends only on
-    # the one matching the current offset; the other is a same-day no-op.
-    # This keeps delivery pinned to 9:33 year-round without ever needing
-    # to touch this file again.
+    # This cron is only a wake-up call, not the send time: GitHub promises
+    # merely to start a scheduled run *at or after* its cron time, and on
+    # shared runners it is routinely 30-90 minutes late (2026-08-24 fired
+    # 51 and 48 minutes late, 2026-08-21 45 minutes). Pinning delivery to
+    # the cron time is therefore impossible.
     #
-    # The target is early on purpose: GitHub only guarantees that a
-    # scheduled workflow starts *at or after* its cron time, and delays of
-    # 30-60 minutes happen regularly on shared runners (2026-08-21 fired 45
-    # minutes late), so the send time is effectively a floor, not an exact
-    # time. Minute is off the hour because :00 is the most congested slot
-    # on all of GitHub Actions and gets delayed the hardest.
-    - cron: "33 7 * * 1-5" # ~9:33 CEST
-    - cron: "33 8 * * 1-5" # ~9:33 CET
+    # So the job starts with a deliberate head start and main.py sleeps
+    # until 9:33 Europe/Prague before scraping and sending. The send time
+    # then comes from a clock we control, and a late start only eats into
+    # the head start instead of shifting the email.
+    #
+    # 6:00 UTC is 8:00 local in summer (CEST) and 7:00 in winter (CET), so
+    # the head start is 93 min / 153 min - comfortably more than the worst
+    # delay seen so far, and DST needs no second cron: whatever the offset,
+    # main.py wakes up at the same local time.
+    - cron: "0 6 * * 1-5"
   workflow_dispatch: {}
 
 jobs:
   send-menu:
     runs-on: ubuntu-latest
+    # Head start (up to ~2.5 h) plus scraping, still far below the 6 h cap.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v7
 
@@ -38,7 +39,6 @@ jobs:
         run: python main.py
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
