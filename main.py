@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -25,11 +26,38 @@ from scrapers.generic_html import fetch_generic_menu
 from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
-TARGET_LOCAL_HOUR = 10  # see daily-menu.yml for why two crons feed into this check
+PRAGUE = ZoneInfo("Europe/Prague")
+TARGET_LOCAL_HOUR = 9
+TARGET_LOCAL_MINUTE = 33
 
 
-def is_target_local_hour() -> bool:
-    return datetime.now(ZoneInfo("Europe/Prague")).hour == TARGET_LOCAL_HOUR
+def seconds_until_target(now: datetime | None = None) -> float:
+    """How long until today's send time in Prague; 0 if it already passed."""
+    now = now or datetime.now(PRAGUE)
+    target = now.replace(
+        hour=TARGET_LOCAL_HOUR, minute=TARGET_LOCAL_MINUTE, second=0, microsecond=0
+    )
+    return max(0.0, (target - now).total_seconds())
+
+
+def wait_for_target_time() -> None:
+    """Hold the job until the send time.
+
+    The workflow is scheduled well before the send time because GitHub only
+    promises to start a scheduled run *at or after* its cron time and in
+    practice runs up to an hour late. Waiting here means the delivery time
+    depends on this clock rather than on when the runner happened to boot.
+    """
+    delay = seconds_until_target()
+    if not delay:
+        print("Runner started past the send time, sending right away.", flush=True)
+        return
+    print(
+        f"Runner started early, waiting {delay / 60:.0f} min until "
+        f"{TARGET_LOCAL_HOUR}:{TARGET_LOCAL_MINUTE:02d} Europe/Prague.",
+        flush=True,
+    )
+    time.sleep(delay)
 
 
 def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
@@ -82,15 +110,13 @@ def main() -> None:
 
     dry_run = "--dry-run" in sys.argv
 
-    # The GitHub Actions workflow schedules cron triggers for both possible
-    # UTC offsets of 10:00 Europe/Prague (CEST/CET) so delivery time doesn't
-    # drift across DST changes; whichever one fires outside the real local
-    # 10:00 hour is a no-op. Manual runs (workflow_dispatch) and local runs
-    # always go through, so testing is never blocked by the time of day.
-    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and not is_target_local_hour():
-        print("Skipping: this cron fires at the other DST offset, not the local 10:00 send.")
-        return
+    # Only scheduled runs wait for the send time; manual runs
+    # (workflow_dispatch) and local runs send immediately, so testing is
+    # never blocked by the time of day.
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and not dry_run:
+        wait_for_target_time()
 
+    # Scraped after the wait so the menus are as fresh as the email claims.
     restaurants = load_restaurants()
     results = scrape_all(restaurants)
 

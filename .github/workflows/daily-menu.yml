@@ -2,28 +2,29 @@ name: Daily lunch menu email
 
 "on":
   schedule:
-    # Cron always runs in UTC, and Europe/Prague alternates between UTC+2
-    # (CEST, roughly late Mar - late Oct) and UTC+1 (CET, the rest of the
-    # year), so a single fixed cron would drift by an hour twice a year.
-    # Instead we schedule both UTC offsets that could correspond to 10:00
-    # local time; main.py checks the *actual* local time at run time and
-    # only sends on the one that's really 10:00 Europe/Prague, the other
-    # is a same-day no-op. This keeps delivery pinned to 10:00 year-round
-    # without ever needing to touch this file again.
+    # This cron is only a wake-up call, not the send time: GitHub promises
+    # merely to start a scheduled run *at or after* its cron time, and on
+    # shared runners it is routinely 30-90 minutes late (2026-08-24 fired
+    # 51 and 48 minutes late, 2026-08-21 45 minutes). Pinning delivery to
+    # the cron time is therefore impossible.
     #
-    # Minute is deliberately :13, not :00 - GitHub's own docs warn that
-    # scheduled workflows "may be delayed during periods of high load...
-    # the start of every hour", and on-the-hour crons are the single most
-    # congested slot on all of GitHub Actions (sometimes delayed by 30+
-    # minutes or dropped for that day entirely). Off-peak minutes like
-    # :13 run reliably on time.
-    - cron: "13 8 * * 1-5" # ~10:13 CEST
-    - cron: "13 9 * * 1-5" # ~10:13 CET
+    # So the job starts with a deliberate head start and main.py sleeps
+    # until 9:33 Europe/Prague before scraping and sending. The send time
+    # then comes from a clock we control, and a late start only eats into
+    # the head start instead of shifting the email.
+    #
+    # 6:00 UTC is 8:00 local in summer (CEST) and 7:00 in winter (CET), so
+    # the head start is 93 min / 153 min - comfortably more than the worst
+    # delay seen so far, and DST needs no second cron: whatever the offset,
+    # main.py wakes up at the same local time.
+    - cron: "0 6 * * 1-5"
   workflow_dispatch: {}
 
 jobs:
   send-menu:
     runs-on: ubuntu-latest
+    # Head start (up to ~2.5 h) plus scraping, still far below the 6 h cap.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v7
 
