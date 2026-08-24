@@ -100,8 +100,33 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
             entry["menu_image_url"] = entry["menu"].image_url or None
         except Exception as exc:  # noqa: BLE001 - we want to keep going for other restaurants
             entry["error"] = str(exc)
+            print(f"ERROR {r['name']}: {exc}", flush=True)
         results.append(entry)
     return results
+
+
+def scrape_errors(results: list[dict]) -> list[tuple[str, str]]:
+    return [(r["name"], r["error"]) for r in results if r.get("error")]
+
+
+def fail_if_errors(results: list[dict]) -> None:
+    """Turn the GitHub Actions run red when a restaurant scrape failed.
+
+    The email still goes out with whatever did scrape, so a single broken
+    adapter doesn't silence the rest. A green checkmark used to mean "the
+    script ran", including the 2026-08-24 scheduled runs that skipped the
+    send entirely - so a failed restaurant has to be a failed job.
+    """
+    errors = scrape_errors(results)
+    if not errors:
+        return
+    print(
+        f"Failing the run: {len(errors)} restaurant(s) could not be scraped:",
+        flush=True,
+    )
+    for name, message in errors:
+        print(f"  - {name}: {message}", flush=True)
+    sys.exit(1)
 
 
 def main() -> None:
@@ -126,11 +151,17 @@ def main() -> None:
 
     if dry_run:
         print(text_body)
+        fail_if_errors(results)
         return
 
     subject = f"Obědové menu – {datetime.now():%d.%m.%Y}"
-    send_email(subject=subject, html_body=html_body, text_body=text_body)
+    try:
+        send_email(subject=subject, html_body=html_body, text_body=text_body)
+    except Exception as exc:  # noqa: BLE001 - surface SMTP/config failures as a red job
+        print(f"Failed to send email: {exc}", flush=True)
+        raise SystemExit(1) from exc
     print(f"Sent menu email for {len(results)} restaurant(s).")
+    fail_if_errors(results)
 
 
 if __name__ == "__main__":

@@ -113,6 +113,11 @@ python main.py
    Čekání v běžícím jobu je u veřejných repozitářů zdarma (neomezené
    minuty) a vejde se do 6hodinového limitu jednoho jobu.
 
+   Když se e-mail nepodaří odeslat (SMTP, chybějící secrets) nebo když
+   u některé restaurace scrapování spadne, workflow skončí červeně, i
+   když zbytek menu v e-mailu odejde. GitHub pak pošle notifikaci o
+   failed runu (Settings → Notifications → Actions).
+
 ## Známá omezení
 
 - Pokud restaurace změní šablonu svého webu/widgetu, parser pro ni může
