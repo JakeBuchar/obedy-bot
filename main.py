@@ -7,12 +7,16 @@ Run locally for testing:
     $env:MAIL_TO="you@gmail.com"
     python main.py
 
-Add --dry-run to skip sending the email and just print the result.
+Add --dry-run to skip sending the email, print the text result, and write
+email_preview.html (open that file to see the real HTML email). Add
+--preview to also open email_preview.html in a browser.
 """
 from __future__ import annotations
 
 import sys
+import webbrowser
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -25,7 +29,14 @@ from scrapers.govinda import fetch_govinda_menu
 from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
+PREVIEW_PATH = Path("email_preview.html")
 PRAGUE = ZoneInfo("Europe/Prague")
+
+
+def write_preview(html_body: str) -> Path:
+    """Overwrite email_preview.html with the rendered HTML email body."""
+    PREVIEW_PATH.write_text(html_body, encoding="utf-8")
+    return PREVIEW_PATH.resolve()
 
 
 def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
@@ -103,7 +114,8 @@ def main() -> None:
     if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
         sys.stdout.reconfigure(encoding="utf-8")
 
-    dry_run = "--dry-run" in sys.argv
+    preview = "--preview" in sys.argv
+    dry_run = "--dry-run" in sys.argv or preview
 
     restaurants = load_restaurants()
     results = scrape_all(restaurants)
@@ -113,7 +125,11 @@ def main() -> None:
     html_body = render_html(results, generated_at)
 
     if dry_run:
+        preview_path = write_preview(html_body)
         print(text_body)
+        print(f"\nHTML náhled: {preview_path}", flush=True)
+        if preview:
+            webbrowser.open(preview_path.as_uri())
         fail_if_errors(results)
         return
 
