@@ -14,10 +14,9 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 - `render.py` – poskládá HTML/text e-mail ze všech restaurací.
 - `email_sender.py` – odešle e-mail přes SMTP.
 - `main.py` – vše spustí a odešle.
-- `.github/workflows/daily-menu.yml` – spustí běh každý všední den s
-  předstihem přes GitHub Actions (běží zadarmo, i když je počítač vypnutý);
-  `main.py` pak počká a e-mail odešle v 9:33 (Europe/Prague, po celý rok
-  stejně).
+- `.github/workflows/daily-menu.yml` – spustí běh každý všední den ráno
+  přes GitHub Actions (běží zadarmo, i když je počítač vypnutý); e-mail
+  odejde hned, jak se běh rozjede.
 
 ## Jak přidat další restauraci
 
@@ -95,23 +94,16 @@ python main.py
 
 3. V záložce **Actions** můžete workflow "Daily lunch menu email" spustit
    manuálně (`workflow_dispatch` / tlačítko "Run workflow") a hned zkontrolovat,
-   že e-mail dorazí. Jinak se e-mail odesílá automaticky v 9:33
-   (Europe/Prague) každý všední den, po celý rok stejně bez ohledu na
-   letní/zimní čas.
+   že e-mail dorazí. Jinak se e-mail odesílá automaticky každý všední den
+   ráno.
 
-   **Jak je zajištěný přesný čas:** cron v GitHub Actions není spolehlivý –
-   GitHub garantuje jen to, že běh spustí *nejdřív* v zadaný čas, a na
-   sdílených runnerech běžně nabírá 30–90 minut zpoždění (24. 8. 2026 o 51
-   a 48 minut, 21. 8. o 45 minut). Cron je proto nastavený na 6:00 UTC
-   jen jako "budík" s rezervou (8:00 letního / 7:00 zimního času) a
-   `main.py` pak počká do 9:33 místního času a teprve potom stáhne menu a
-   odešle e-mail. Zpoždění GitHubu tak ukrojí jen z čekání a čas doručení
-   nijak neposune. Když by běh startoval až po 9:33, odešle se okamžitě.
-
-   Díky tomu čekání není potřeba řešit letní/zimní čas dvěma crony –
-   `main.py` se probouzí na stejný místní čas bez ohledu na UTC posun.
-   Čekání v běžícím jobu je u veřejných repozitářů zdarma (neomezené
-   minuty) a vejde se do 6hodinového limitu jednoho jobu.
+   **K času doručení:** cron v GitHub Actions není přesný – GitHub
+   garantuje jen to, že běh spustí *nejdřív* v zadaný čas, a na sdílených
+   runnerech běžně nabírá 30–60 minut zpoždění (25. 8. 2026 o 33 minut,
+   24. 8. o 51 a 48 minut). Cron `30 6 * * 1-5` je proto nejdřívější možný
+   čas odeslání, ne přesný: 8:30 letního / 7:30 zimního času, reálně e-mail
+   dorazí zhruba do hodiny po tom. Menu se stahuje až při běhu, takže je
+   vždy aktuální.
 
    Když se e-mail nepodaří odeslat (SMTP, chybějící secrets) nebo když
    u některé restaurace scrapování spadne, workflow skončí červeně, i

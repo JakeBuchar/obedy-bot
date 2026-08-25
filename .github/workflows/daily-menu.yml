@@ -2,29 +2,23 @@ name: Daily lunch menu email
 
 "on":
   schedule:
-    # This cron is only a wake-up call, not the send time: GitHub promises
-    # merely to start a scheduled run *at or after* its cron time, and on
-    # shared runners it is routinely 30-90 minutes late (2026-08-24 fired
-    # 51 and 48 minutes late, 2026-08-21 45 minutes). Pinning delivery to
-    # the cron time is therefore impossible.
+    # The email goes out as soon as the runner starts, so this cron is the
+    # earliest possible delivery time rather than an exact one: GitHub only
+    # promises to start a scheduled run *at or after* its cron time and is
+    # routinely 30-60 minutes late (2026-08-25 by 33 min, 2026-08-24 by 51
+    # and 48 min).
     #
-    # So the job starts with a deliberate head start and main.py sleeps
-    # until 9:33 Europe/Prague before scraping and sending. The send time
-    # then comes from a clock we control, and a late start only eats into
-    # the head start instead of shifting the email.
-    #
-    # 6:00 UTC is 8:00 local in summer (CEST) and 7:00 in winter (CET), so
-    # the head start is 93 min / 153 min - comfortably more than the worst
-    # delay seen so far, and DST needs no second cron: whatever the offset,
-    # main.py wakes up at the same local time.
-    - cron: "0 6 * * 1-5"
+    # 6:30 UTC is 8:30 local in summer (CEST) and 7:30 in winter (CET), so
+    # in practice the menu lands somewhere between then and roughly an hour
+    # later - always well before lunch, which is what matters here.
+    - cron: "30 6 * * 1-5"
   workflow_dispatch: {}
 
 jobs:
   send-menu:
     runs-on: ubuntu-latest
-    # Head start (up to ~2.5 h) plus scraping, still far below the 6 h cap.
-    timeout-minutes: 300
+    # Scraping every restaurant takes seconds; anything longer is a hang.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
 
@@ -38,7 +32,6 @@ jobs:
       - name: Send menu email
         run: python main.py
         env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
