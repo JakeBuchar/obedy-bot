@@ -25,6 +25,10 @@
 #   Góvinda publishes the whole week in one page. This adapter selects only
 #   the column whose heading contains today's Europe/Prague date.
 #
+# adapter: laventola
+#   Pizzeria La Ventola lunch menu at laventola.cz/#menu. Dedupes the
+#   widget's duplicated tab markup so each dish appears once.
+#
 # image_selector (optional, "html" adapter only)
 #   When the daily menu is published purely as a photo (no text markup to
 #   scrape), the "html" adapter auto-detects the menu photo on every run by
@@ -60,12 +64,6 @@ restaurants:
     menubot_hash: "hybernska759632459849849849"
     logo_url: "https://cdn.myshoptet.com/usr/www.restauracehybernska.cz/user/logos/logo-black.png"
 
-  - name: "Masaryčka Restaurace"
-    url: "https://www.masaryckarestaurace.cz/"
-    adapter: "choiceqr"
-    choiceqr_url: "https://masaryckarestaurace.choiceqr.com/section:poledni-menu"
-    logo_url: "https://www.masaryckarestaurace.cz/apple-touch-icon.png"
-
   - name: "Pizzerie Mikulka"
     url: "https://pizzeriemikulka.cz/poledni-menu/"
     adapter: "html"
@@ -85,8 +83,19 @@ restaurants:
     content_selector: "main"
     logo_url: "https://www.lasadelitas.cz/data/themes/lasadelitas/img/logo-lasadelitas.png"
 
+  - name: "La Ventola"
+    url: "https://laventola.cz/#menu"
+    adapter: "laventola"
+    logo_url: "https://laventola.cz/wp-content/uploads/2021/07/cropped-logo-ventola-web-300x300.png"
+
   - name: "Sia"
     url: "https://www.siarestaurant.cz/menu/"
     adapter: "menubot"
     menubot_hash: "sia484626412569856654"
     logo_url: "https://cdn.myshoptet.com/usr/www.siarestaurant.cz/user/logos/sialogo.svg"
+
+  - name: "Masaryčka Restaurace"
+    url: "https://www.masaryckarestaurace.cz/"
+    adapter: "choiceqr"
+    choiceqr_url: "https://masaryckarestaurace.choiceqr.com/section:poledni-menu"
+    logo_url: "https://www.masaryckarestaurace.cz/apple-touch-icon.png"
