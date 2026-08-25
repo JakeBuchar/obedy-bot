@@ -8,10 +8,10 @@ name: Daily lunch menu email
     # routinely 30-60 minutes late (2026-08-25 by 33 min, 2026-08-24 by 51
     # and 48 min).
     #
-    # 6:30 UTC is 8:30 local in summer (CEST) and 7:30 in winter (CET), so
+    # 6:47 UTC is 8:47 local in summer (CEST) and 7:47 in winter (CET), so
     # in practice the menu lands somewhere between then and roughly an hour
     # later - always well before lunch, which is what matters here.
-    - cron: "30 6 * * 1-5"
+    - cron: "47 6 * * 1-5"
   workflow_dispatch: {}
 
 jobs:

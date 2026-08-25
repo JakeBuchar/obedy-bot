@@ -100,8 +100,8 @@ python main.py
    **K času doručení:** cron v GitHub Actions není přesný – GitHub
    garantuje jen to, že běh spustí *nejdřív* v zadaný čas, a na sdílených
    runnerech běžně nabírá 30–60 minut zpoždění (25. 8. 2026 o 33 minut,
-   24. 8. o 51 a 48 minut). Cron `30 6 * * 1-5` je proto nejdřívější možný
-   čas odeslání, ne přesný: 8:30 letního / 7:30 zimního času, reálně e-mail
+   24. 8. o 51 a 48 minut). Cron `47 6 * * 1-5` je proto nejdřívější možný
+   čas odeslání, ne přesný: 8:47 letního / 7:47 zimního času, reálně e-mail
    dorazí zhruba do hodiny po tom. Menu se stahuje až při běhu, takže je
    vždy aktuální.
 
