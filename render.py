@@ -56,20 +56,23 @@ def render_text(results: list[dict], generated_at: datetime | None = None) -> st
 
 
 def _header_html(name: str, url: str, logo_url: str) -> str:
+    """Restaurant title row, used as the <summary> of a collapsible card.
+
+    Inline elements only (no table): <summary> puts its disclosure triangle
+    next to inline content, while a nested table would push the title onto
+    its own line in the clients that do support the widget.
+    """
     name_html = f'<a href="{escape(url)}" style="color:{ACCENT};text-decoration:none;">{name}</a>' if url else name
-    logo_cell = ""
+    logo_html = ""
     if logo_url:
-        logo_cell = (
-            '<td style="padding-right:12px;width:44px;">'
-            f'<img src="{escape(logo_url)}" alt="" width="44" height="44" '
-            'style="display:block;height:44px;width:44px;max-width:44px;'
-            'object-fit:cover;border-radius:6px;" onerror="this.style.display=\'none\'">'
-            "</td>"
+        logo_html = (
+            f'<img src="{escape(logo_url)}" alt="" width="32" height="32" '
+            'style="height:32px;width:32px;max-width:32px;object-fit:cover;border-radius:6px;'
+            'vertical-align:middle;margin-right:10px;" onerror="this.style.display=\'none\'">'
         )
     return (
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 12px;">'
-        f'<tr>{logo_cell}<td valign="middle"><h2 style="margin:0;font-size:18px;'
-        f'font-family:{FONT};">{name_html}</h2></td></tr></table>'
+        f'{logo_html}<span style="font-size:18px;font-weight:bold;vertical-align:middle;'
+        f'font-family:{FONT};">{name_html}</span>'
     )
 
 
@@ -180,9 +183,23 @@ def render_html(results: list[dict], generated_at: datetime | None = None) -> st
 
 
 def _card_html(header: str, body: str) -> str:
+    """One restaurant card, collapsed behind a disclosure triangle.
+
+    <details> is interactive in WebKit clients (Apple Mail, iOS Mail) and in
+    the browser preview. Gmail and Outlook strip the tags and render the
+    contents inline, which is exactly the old always-expanded card, so the
+    email reads the same everywhere.
+    """
     return (
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
         'style="background:#ffffff;border-radius:10px;margin-bottom:20px;">'
-        f'<tr><td style="padding:20px 24px;">{header}{body}</td></tr>'
+        '<tr><td style="padding:20px 24px;">'
+        "<details>"
+        f'<summary style="cursor:pointer;">{header}</summary>'
+        # Spacing lives on the body, not the summary, so a collapsed card
+        # doesn't keep a gap under its title.
+        f'<div style="padding-top:12px;">{body}</div>'
+        "</details>"
+        "</td></tr>"
         "</table>"
     )
