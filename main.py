@@ -26,6 +26,7 @@ from render import render_html, render_text
 from scrapers.choiceqr import fetch_choiceqr_menu
 from scrapers.generic_html import fetch_generic_menu
 from scrapers.govinda import fetch_govinda_menu
+from scrapers.laventola import fetch_laventola_menu
 from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
@@ -42,7 +43,8 @@ def write_preview(html_body: str) -> Path:
 def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
     with open(path, encoding="utf-8") as f:
         restaurants = yaml.safe_load(f)["restaurants"]
-    return sorted(restaurants, key=lambda r: r["name"].casefold())
+    # Order is the yaml list order (Masaryčka is last on purpose).
+    return restaurants
 
 
 def scrape_all(restaurants: list[dict]) -> list[dict]:
@@ -73,6 +75,8 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
                 entry["menu"] = fetch_choiceqr_menu(r["choiceqr_url"])
             elif adapter == "govinda":
                 entry["menu"] = fetch_govinda_menu(r["url"])
+            elif adapter == "laventola":
+                entry["menu"] = fetch_laventola_menu(r["url"])
             else:
                 raise ValueError(f"Unknown adapter '{adapter}'")
             # Menu.image_url is auto-discovered fresh on every scrape (see
