@@ -56,11 +56,11 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# jen vypsat do konzole, bez odeslání e-mailu:
+# jen vypsat text do konzole + přepsat email_preview.html (bez odeslání):
 python main.py --dry-run
+# pak otevřete email_preview.html v prohlížeči (dvojklik / Open with)
 
-# vygenerovat HTML e-mail do email_preview.html a otevřít v prohlížeči
-# (přesně to, co dorazí do schránky – včetně log a fotek menu):
+# totéž co --dry-run, navíc otevře email_preview.html v prohlížeči:
 python main.py --preview
 
 # skutečné odeslání e-mailu (nastavte proměnné prostředí):
