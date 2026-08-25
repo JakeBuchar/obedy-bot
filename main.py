@@ -21,6 +21,7 @@ from email_sender import send_email
 from render import render_html, render_text
 from scrapers.choiceqr import fetch_choiceqr_menu
 from scrapers.generic_html import fetch_generic_menu
+from scrapers.govinda import fetch_govinda_menu
 from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
@@ -59,6 +60,8 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
                 )
             elif adapter == "choiceqr":
                 entry["menu"] = fetch_choiceqr_menu(r["choiceqr_url"])
+            elif adapter == "govinda":
+                entry["menu"] = fetch_govinda_menu(r["url"])
             else:
                 raise ValueError(f"Unknown adapter '{adapter}'")
             # Menu.image_url is auto-discovered fresh on every scrape (see
