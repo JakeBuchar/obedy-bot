@@ -21,6 +21,10 @@
 #   *.choiceqr.com (e.g. .../section:poledni-menu); "url" stays the
 #   restaurant's own website for the email link.
 #
+# adapter: govinda
+#   Góvinda publishes the whole week in one page. This adapter selects only
+#   the column whose heading contains today's Europe/Prague date.
+#
 # image_selector (optional, "html" adapter only)
 #   When the daily menu is published purely as a photo (no text markup to
 #   scrape), the "html" adapter auto-detects the menu photo on every run by
@@ -38,6 +42,11 @@ restaurants:
     adapter: "menubot"
     menubot_hash: "fuze95198961165899562563569999"
     logo_url: "https://www.fuzepraha.cz/app/themes/ipress/build/files/favicons/fuze/apple-touch-icon.png"
+
+  - name: "Góvinda"
+    url: "https://govindarestaurace.cz/#menu"
+    adapter: "govinda"
+    logo_url: "https://govindarestaurace.cz/wp-content/uploads/2020/09/cropped-Govinda-Restaurant_logo_2020_vector_web-Black-ico-1-192x192.png"
 
   - name: "Han.sik"
     url: "https://ihansik.cz/"
