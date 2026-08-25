@@ -59,6 +59,10 @@ pip install -r requirements.txt
 # jen vypsat do konzole, bez odeslání e-mailu:
 python main.py --dry-run
 
+# vygenerovat HTML e-mail do email_preview.html a otevřít v prohlížeči
+# (přesně to, co dorazí do schránky – včetně log a fotek menu):
+python main.py --preview
+
 # skutečné odeslání e-mailu (nastavte proměnné prostředí):
 $env:SMTP_HOST="smtp.gmail.com"
 $env:SMTP_PORT="465"

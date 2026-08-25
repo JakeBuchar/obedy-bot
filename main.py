@@ -7,12 +7,16 @@ Run locally for testing:
     $env:MAIL_TO="you@gmail.com"
     python main.py
 
-Add --dry-run to skip sending the email and just print the result.
+Add --dry-run to skip sending the email and just print the result, or
+--preview to write the real HTML email to email_preview.html and open it
+in a browser instead of printing plain text.
 """
 from __future__ import annotations
 
 import sys
+import webbrowser
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -25,6 +29,7 @@ from scrapers.govinda import fetch_govinda_menu
 from scrapers.menubot import fetch_menubot_menu
 
 CONFIG_PATH = "config/restaurants.yaml"
+PREVIEW_PATH = Path("email_preview.html")
 PRAGUE = ZoneInfo("Europe/Prague")
 
 
@@ -103,7 +108,8 @@ def main() -> None:
     if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
         sys.stdout.reconfigure(encoding="utf-8")
 
-    dry_run = "--dry-run" in sys.argv
+    preview = "--preview" in sys.argv
+    dry_run = "--dry-run" in sys.argv or preview
 
     restaurants = load_restaurants()
     results = scrape_all(restaurants)
@@ -111,6 +117,13 @@ def main() -> None:
     generated_at = datetime.now(PRAGUE)
     text_body = render_text(results, generated_at)
     html_body = render_html(results, generated_at)
+
+    if preview:
+        PREVIEW_PATH.write_text(html_body, encoding="utf-8")
+        print(f"Náhled e-mailu: {PREVIEW_PATH.resolve()}")
+        webbrowser.open(PREVIEW_PATH.resolve().as_uri())
+        fail_if_errors(results)
+        return
 
     if dry_run:
         print(text_body)
