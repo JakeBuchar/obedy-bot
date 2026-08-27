@@ -13,6 +13,7 @@ email_preview.html (open that file to see the real HTML email). Add
 """
 from __future__ import annotations
 
+import os
 import sys
 import webbrowser
 from datetime import datetime
@@ -21,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
+from already_sent import already_sent_today
 from email_sender import send_email
 from render import render_html, render_text
 from scrapers.choiceqr import fetch_choiceqr_menu
@@ -120,6 +122,13 @@ def main() -> None:
 
     preview = "--preview" in sys.argv
     dry_run = "--dry-run" in sys.argv or preview
+
+    # Several crons fire each morning as backups for the ones GitHub drops;
+    # whichever gets there first sends, the rest bail out here. Manual runs
+    # always go through - asking for a run means asking for an email.
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and not dry_run:
+        if already_sent_today():
+            return
 
     restaurants = load_restaurants()
     results = scrape_all(restaurants)
