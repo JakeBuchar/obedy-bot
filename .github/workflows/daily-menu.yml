@@ -11,8 +11,21 @@ name: Daily lunch menu email
     # 6:47 UTC is 8:47 local in summer (CEST) and 7:47 in winter (CET), so
     # in practice the menu lands somewhere between then and roughly an hour
     # later - always well before lunch, which is what matters here.
+    #
+    # The later two are backups. GitHub does not merely delay scheduled runs,
+    # it also drops them: on 2026-08-27 the 6:47 cron never fired at all and
+    # no email went out. A run that finds the menu already sent exits in
+    # seconds (see already_sent.py), so the backups cost nothing on the days
+    # the first cron works.
     - cron: "47 6 * * 1-5"
+    - cron: "30 7 * * 1-5"
+    - cron: "20 8 * * 1-5"
   workflow_dispatch: {}
+
+permissions:
+  contents: read
+  # Lets already_sent.py ask whether an earlier run today already sent.
+  actions: read
 
 jobs:
   send-menu:
@@ -32,6 +45,8 @@ jobs:
       - name: Send menu email
         run: python main.py
         env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}

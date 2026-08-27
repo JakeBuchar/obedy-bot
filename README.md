@@ -109,6 +109,16 @@ python main.py
    dorazí zhruba do hodiny po tom. Menu se stahuje až při běhu, takže je
    vždy aktuální.
 
+   **Záložní spuštění:** GitHub naplánované běhy nejen zpožďuje, ale někdy
+   je i úplně zahodí – 27. 8. 2026 se cron nespustil vůbec a e-mail
+   nedorazil. Proto jsou nastavené tři crony (6:47, 7:30 a 8:20 UTC).
+   Aby nepřišly tři e-maily, každý naplánovaný běh se nejdřív zeptá
+   Actions API, jestli už dnes nějaký běh úspěšně proběhl (viz
+   `already_sent.py`); pokud ano, během pár sekund skončí. Když se na to
+   nepodaří odpovědět (výpadek API, chybějící token), e-mail se raději
+   pošle – duplikát je menší problém než žádné menu. Ruční spuštění
+   (`workflow_dispatch`) pošle e-mail vždy.
+
    Když se e-mail nepodaří odeslat (SMTP, chybějící secrets) nebo když
    u některé restaurace scrapování spadne, workflow skončí červeně, i
    když zbytek menu v e-mailu odejde. GitHub pak pošle notifikaci o
