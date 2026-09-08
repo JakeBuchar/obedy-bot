@@ -101,23 +101,68 @@ python main.py
    že e-mail dorazí. Jinak se e-mail odesílá automaticky každý všední den
    ráno.
 
-   **K času doručení:** cron v GitHub Actions není přesný – GitHub
-   garantuje jen to, že běh spustí *nejdřív* v zadaný čas, a na sdílených
-   runnerech běžně nabírá 30–60 minut zpoždění (25. 8. 2026 o 33 minut,
-   24. 8. o 51 a 48 minut). Cron `47 6 * * 1-5` je proto nejdřívější možný
-   čas odeslání, ne přesný: 8:47 letního / 7:47 zimního času, reálně e-mail
-   dorazí zhruba do hodiny po tom. Menu se stahuje až při běhu, takže je
-   vždy aktuální.
+   **Proč čas doručení neřídí cron:** cron v GitHub Actions se ukázal jako
+   nepoužitelný. GitHub garantuje jen to, že běh spustí *nejdřív* v zadaný
+   čas, a od 27. 8. 2026 startují naplánované běhy o **3,5 až 12 hodin
+   později** – první odeslání dne padlo mezi 13:43 a 15:02, tedy po obědě.
+   27. 8. se crony nespustily vůbec a e-mail nepřišel. Naproti tomu běh
+   spuštěný přes API (`workflow_dispatch`) startuje během několika sekund.
 
-   **Záložní spuštění:** GitHub naplánované běhy nejen zpožďuje, ale někdy
-   je i úplně zahodí – 27. 8. 2026 se cron nespustil vůbec a e-mail
-   nedorazil. Proto jsou nastavené tři crony (6:47, 7:30 a 8:20 UTC).
-   Aby nepřišly tři e-maily, každý naplánovaný běh se nejdřív zeptá
-   Actions API, jestli už dnes nějaký běh úspěšně proběhl (viz
-   `already_sent.py`); pokud ano, během pár sekund skončí. Když se na to
-   nepodaří odpovědět (výpadek API, chybějící token), e-mail se raději
-   pošle – duplikát je menší problém než žádné menu. Ruční spuštění
-   (`workflow_dispatch`) pošle e-mail vždy.
+   Doručení proto řídí **externí plánovač**, který workflow spustí přes
+   API (návod níže). Crony v `daily-menu.yml` zůstávají jen jako záchranná
+   brzda – když externí spouštění selže, menu dorazí aspoň pozdě.
+
+   **Aby nepřišlo víc e-mailů najednou:** každý běh, který nespustil člověk
+   ručně, se nejdřív zeptá Actions API, jestli dnes už nějaký běh úspěšně
+   proběhl (viz `already_sent.py`); pokud ano, během pár sekund skončí.
+   Když se na to nepodaří odpovědět (výpadek API, chybějící token), e-mail
+   se raději pošle – duplikát je menší problém než žádné menu.
+
+### Externí spouštění (hlavní cesta doručení)
+
+1. **Vytvořte token**: GitHub → Settings → Developer settings → Personal
+   access tokens → **Fine-grained tokens** → Generate new token. Repository
+   access omezte na `obedy-bot`, v Permissions dejte **Actions: Read and
+   write**. Nic víc token neumožní – s kódem v repozitáři nemůže hýbat.
+
+2. **Otestujte spuštění** (nahraďte `<TOKEN>`):
+
+   ```bash
+   curl -X POST \
+     -H "Accept: application/vnd.github+json" \
+     -H "Authorization: Bearer <TOKEN>" \
+     -H "X-GitHub-Api-Version: 2022-11-28" \
+     https://api.github.com/repos/JakeBuchar/obedy-bot/actions/workflows/daily-menu.yml/dispatches \
+     -d '{"ref":"master","inputs":{"skip_if_sent":"true"}}'
+   ```
+
+   Odpověď `204 No Content` znamená úspěch – běh naskočí v Actions během
+   pár sekund. `skip_if_sent: "true"` zajistí, že opakované zavolání
+   (retry plánovače) už druhý e-mail nepošle.
+
+3. **Naplánujte to** v jakékoli službě, která umí poslat POST s hlavičkami
+   – např. [cron-job.org](https://cron-job.org) (zdarma, umí custom headers
+   i tělo požadavku) nebo Google Apps Script s time-driven triggerem:
+
+   ```javascript
+   function sendMenu() {
+     UrlFetchApp.fetch(
+       "https://api.github.com/repos/JakeBuchar/obedy-bot/actions/workflows/daily-menu.yml/dispatches",
+       {
+         method: "post",
+         headers: {
+           Authorization: "Bearer " + PropertiesService.getScriptProperties().getProperty("GH_TOKEN"),
+           Accept: "application/vnd.github+json",
+         },
+         payload: JSON.stringify({ ref: "master", inputs: { skip_if_sent: "true" } }),
+         contentType: "application/json",
+       },
+     );
+   }
+   ```
+
+   Čas nastavte na požadovanou hodinu v zóně Europe/Prague, po–pá. Plánovač
+   běží mimo GitHub, takže se ho zpoždění Actions netýká.
 
    Když se e-mail nepodaří odeslat (SMTP, chybějící secrets) nebo když
    u některé restaurace scrapování spadne, workflow skončí červeně, i
