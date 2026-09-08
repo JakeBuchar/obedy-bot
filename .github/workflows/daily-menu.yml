@@ -1,26 +1,26 @@
 name: Daily lunch menu email
 
 "on":
+  # These crons are a last-resort fallback, not the delivery mechanism.
+  # GitHub's scheduler stopped being usable here: since 2026-08-27 every
+  # scheduled run has started 3.5 to 12 hours after its cron time (the
+  # first send of the day landing between 13:43 and 15:02 local, i.e.
+  # after lunch), and on 2026-08-27 the crons did not fire at all.
+  #
+  # Delivery therefore comes from an external scheduler that calls the
+  # workflow_dispatch API with skip_if_sent=true - dispatched runs start
+  # within seconds. See README for the setup. If that trigger ever fails,
+  # these crons still deliver the menu, just late.
   schedule:
-    # The email goes out as soon as the runner starts, so this cron is the
-    # earliest possible delivery time rather than an exact one: GitHub only
-    # promises to start a scheduled run *at or after* its cron time and is
-    # routinely 30-60 minutes late (2026-08-25 by 33 min, 2026-08-24 by 51
-    # and 48 min).
-    #
-    # 6:47 UTC is 8:47 local in summer (CEST) and 7:47 in winter (CET), so
-    # in practice the menu lands somewhere between then and roughly an hour
-    # later - always well before lunch, which is what matters here.
-    #
-    # The later two are backups. GitHub does not merely delay scheduled runs,
-    # it also drops them: on 2026-08-27 the 6:47 cron never fired at all and
-    # no email went out. A run that finds the menu already sent exits in
-    # seconds (see already_sent.py), so the backups cost nothing on the days
-    # the first cron works.
     - cron: "47 6 * * 1-5"
     - cron: "30 7 * * 1-5"
     - cron: "20 8 * * 1-5"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      skip_if_sent:
+        description: "Skip when today's email already went out (for the external scheduler; leave off to always send)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,6 +47,7 @@ jobs:
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_IF_SENT: ${{ inputs.skip_if_sent }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
