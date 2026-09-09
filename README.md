@@ -14,6 +14,8 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 - `scrapers/generic_html.py` – záložní adaptér pro restaurace, které mají
   menu přímo ve vlastním HTML (bez widgetu), ovládaný CSS selektory.
 - `render.py` – poskládá HTML/text e-mail ze všech restaurací.
+- `logos.py` – stáhne loga restaurací, převede je na PNG a přiloží je do
+  e-mailu (Outlook neumí WebP ani ICO, ve kterých je některé weby mají).
 - `email_sender.py` – odešle e-mail přes SMTP.
 - `main.py` – vše spustí a odešle.
 - `.github/workflows/daily-menu.yml` – Praha.

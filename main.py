@@ -26,6 +26,7 @@ import yaml
 
 from already_sent import already_sent_today
 from email_sender import send_email
+from logos import inline_logos
 from render import render_html, render_text
 from scrapers.arco import fetch_arco_menu
 from scrapers.choiceqr import fetch_choiceqr_menu
@@ -173,10 +174,11 @@ def main() -> None:
 
     generated_at = datetime.now(PRAGUE)
     text_body = render_text(results, generated_at)
-    html_body = render_html(results, generated_at, city=city_label())
 
     if dry_run:
-        preview_path = write_preview(html_body)
+        # The preview keeps the plain logo URLs: a browser loads those
+        # directly, while cid: references only resolve inside a message.
+        preview_path = write_preview(render_html(results, generated_at, city=city_label()))
         print(text_body)
         print(f"\nHTML náhled: {preview_path}", flush=True)
         if preview:
@@ -184,9 +186,17 @@ def main() -> None:
         fail_if_errors(results)
         return
 
+    logo_images = inline_logos(results)
+    html_body = render_html(results, generated_at, city=city_label())
+
     subject = f"Obědové menu ({city_label()}) – {generated_at:%d.%m.%Y}"
     try:
-        send_email(subject=subject, html_body=html_body, text_body=text_body)
+        send_email(
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body,
+            inline_images=logo_images,
+        )
     except Exception as exc:  # noqa: BLE001 - surface SMTP/config failures as a red job
         print(f"Failed to send email: {exc}", flush=True)
         raise SystemExit(1) from exc
