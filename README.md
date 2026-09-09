@@ -6,7 +6,8 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 ## Jak to funguje
 
 - `config/praha.yaml` – restaurace pro Prahu (původní seznam).
-- `config/kolin.yaml` – restaurace pro Kolín (zatím prázdné, doplní se).
+- `config/kolin.yaml` – restaurace pro Kolín (Vodní svět, Farina, La Musica,
+  Arco, Obecní dům, Na Sídlišti 1962, Stoletá).
 - `scrapers/menubot.py` – adaptér pro restaurace používající widget
   [menubot.cz](https://www.menubot.cz) (velmi rozšířené u českých restaurací –
   FUZE Praha i Han.sik ho oba používají, jen s jiným vzhledem šablony).

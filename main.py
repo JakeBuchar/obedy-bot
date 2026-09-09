@@ -27,11 +27,18 @@ import yaml
 from already_sent import already_sent_today
 from email_sender import send_email
 from render import render_html, render_text
+from scrapers.arco import fetch_arco_menu
 from scrapers.choiceqr import fetch_choiceqr_menu
+from scrapers.farina import fetch_farina_menu
 from scrapers.generic_html import fetch_generic_menu
 from scrapers.govinda import fetch_govinda_menu
+from scrapers.katolak import fetch_katolak_menu
+from scrapers.lamusica import fetch_lamusica_menu
 from scrapers.laventola import fetch_laventola_menu
 from scrapers.menubot import fetch_menubot_menu
+from scrapers.nasidlisti import fetch_nasidlisti_menu
+from scrapers.stoleta import fetch_stoleta_menu
+from scrapers.vodni import fetch_vodni_menu
 
 DEFAULT_CONFIG_PATH = "config/praha.yaml"
 PREVIEW_PATH = Path("email_preview.html")
@@ -89,6 +96,20 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
                 entry["menu"] = fetch_govinda_menu(r["url"])
             elif adapter == "laventola":
                 entry["menu"] = fetch_laventola_menu(r["url"])
+            elif adapter == "vodni":
+                entry["menu"] = fetch_vodni_menu(r["url"])
+            elif adapter == "farina":
+                entry["menu"] = fetch_farina_menu(r["url"])
+            elif adapter == "lamusica":
+                entry["menu"] = fetch_lamusica_menu(r["url"])
+            elif adapter == "arco":
+                entry["menu"] = fetch_arco_menu(r["url"])
+            elif adapter == "katolak":
+                entry["menu"] = fetch_katolak_menu(r["url"])
+            elif adapter == "nasidlisti":
+                entry["menu"] = fetch_nasidlisti_menu(r["url"])
+            elif adapter == "stoleta":
+                entry["menu"] = fetch_stoleta_menu(r["url"])
             else:
                 raise ValueError(f"Unknown adapter '{adapter}'")
             # Menu.image_url is auto-discovered fresh on every scrape (see

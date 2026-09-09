@@ -18,12 +18,13 @@ class ConfigPathTest(unittest.TestCase):
             self.assertEqual(main.config_path(), "config/kolin.yaml")
             self.assertEqual(main.city_label(), "Kolín")
 
-    def test_empty_kolin_config_refuses_to_send(self) -> None:
+    def test_empty_restaurant_list_refuses_to_send(self) -> None:
         env = {"CONFIG_PATH": "config/kolin.yaml", "CITY": "Kolín"}
         with patch.dict(os.environ, env, clear=True), patch("sys.argv", ["main.py"]):
-            with self.assertRaises(SystemExit) as caught:
-                main.main()
-            self.assertEqual(caught.exception.code, 1)
+            with patch("main.load_restaurants", return_value=[]):
+                with self.assertRaises(SystemExit) as caught:
+                    main.main()
+                self.assertEqual(caught.exception.code, 1)
 
 
 class WorkflowFileTest(unittest.TestCase):
