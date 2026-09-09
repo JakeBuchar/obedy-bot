@@ -1,6 +1,6 @@
 """Fallback adapter for restaurants that render the menu in their own page
 HTML with no external widget. Configure with a CSS selector per restaurant
-in restaurants.yaml (item_selector, name_selector, price_selector).
+in the city YAML (item_selector, name_selector, price_selector).
 """
 from __future__ import annotations
 

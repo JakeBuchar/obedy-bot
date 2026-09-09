@@ -1,0 +1,7 @@
+# Kolín lunch menus. Completely separate from Praha (config/praha.yaml).
+# Same adapter types as Praha — add restaurants below, then set the
+# MAIL_TO_KOLIN secret and a second Apps Script trigger (see README).
+#
+# Until this list is non-empty, the Kolín workflow will refuse to send.
+
+restaurants: []

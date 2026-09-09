@@ -11,7 +11,7 @@ class SendGuardTest(unittest.TestCase):
         """Returns True when the run sent the email."""
         with patch.dict("os.environ", env, clear=True), patch(
             "main.already_sent_today", return_value=already_sent
-        ), patch("main.load_restaurants", return_value=[]), patch(
+        ), patch("main.load_restaurants", return_value=[{"name": "Test"}]), patch(
             "main.scrape_all", return_value=[]
         ), patch("main.send_email") as send_email, patch("sys.argv", ["main.py"]):
             main.main()

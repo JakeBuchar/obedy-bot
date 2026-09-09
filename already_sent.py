@@ -15,8 +15,17 @@ from zoneinfo import ZoneInfo
 import requests
 
 API_ROOT = "https://api.github.com"
-WORKFLOW_FILE = "daily-menu.yml"
+DEFAULT_WORKFLOW_FILE = "daily-menu.yml"
 PRAGUE = ZoneInfo("Europe/Prague")
+
+
+def workflow_file() -> str:
+    """Which workflow's successful runs count as "already sent".
+
+    Praha and Kolín are separate workflows, so each must only look at its
+    own runs. The workflow file name is passed in as WORKFLOW_FILE.
+    """
+    return os.environ.get("WORKFLOW_FILE", DEFAULT_WORKFLOW_FILE).strip() or DEFAULT_WORKFLOW_FILE
 
 
 def already_sent_today(now: datetime | None = None, timeout: int = 15) -> bool:
@@ -36,7 +45,7 @@ def already_sent_today(now: datetime | None = None, timeout: int = 15) -> bool:
 
     try:
         response = requests.get(
-            f"{API_ROOT}/repos/{repository}/actions/workflows/{WORKFLOW_FILE}/runs",
+            f"{API_ROOT}/repos/{repository}/actions/workflows/{workflow_file()}/runs",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/vnd.github+json",
