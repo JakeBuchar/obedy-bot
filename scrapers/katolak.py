@@ -11,7 +11,7 @@ from datetime import date
 import requests
 
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import today_prague
+from .prague import format_date, reject_stale, today_prague
 
 API_VIEW_URL = "https://be.katolak.cz/menu/today/view"
 PAGE_IMAGE_URL = "https://be.katolak.cz/menu/today/page/0"
@@ -33,11 +33,8 @@ def fetch_katolak_menu(url: str, today: date | None = None, timeout: int = 20) -
     response.raise_for_status()
     payload = response.json()
 
-    published = payload.get("forDate") or ""
-    if published != today.isoformat():
-        raise ValueError(
-            f"Obecní dům has no daily menu published for {today.isoformat()} (got {published or 'none'})"
-        )
+    published = _published_date(payload)
+    reject_stale(published, today, "Obecní dům")
 
     pages = payload.get("pages") or []
     if not pages:
@@ -46,11 +43,18 @@ def fetch_katolak_menu(url: str, today: date | None = None, timeout: int = 20) -
     spans = pages[0].get("spans") or []
     items = _items_from_spans(spans)
     image_url = PAGE_IMAGE_URL if pages else ""
-    heading = f"Denní menu {today.day}.{today.month}.{today.year}"
+    heading = f"Denní menu {format_date(published or today)}"
     raw_text = " ".join(span.get("text", "").strip() for span in spans if span.get("text"))
     if not items and not image_url:
         raise ValueError("Obecní dům daily menu could not be parsed")
     return Menu(heading=heading, items=items, raw_text=raw_text, image_url=image_url)
+
+
+def _published_date(payload: dict) -> date | None:
+    try:
+        return date.fromisoformat(payload.get("forDate") or "")
+    except ValueError:
+        return None
 
 
 def _items_from_spans(spans: list[dict]) -> list[MenuItem]:

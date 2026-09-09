@@ -42,13 +42,27 @@ class VodniParserTest(unittest.TestCase):
         self.assertEqual(menu.items[1].price, "169,- Kč")
 
     @patch("scrapers.vodni.requests.get")
-    def test_fails_when_today_is_missing(self, get: Mock) -> None:
-        get.return_value.text = self.HTML.replace("9.9.2026", "8.9.2026")
-        get.return_value.content = b""
+    def test_accepts_next_day_menu_and_labels_it(self, get: Mock) -> None:
+        html = self.HTML.replace("9.9.2026", "10.9.2026")
+        get.return_value.text = html
+        get.return_value.content = html.encode()
         get.return_value.apparent_encoding = "utf-8"
         get.return_value.encoding = "utf-8"
         get.return_value.raise_for_status.return_value = None
-        with self.assertRaisesRegex(ValueError, "9.9.2026"):
+
+        menu = fetch_vodni_menu("https://example.test/", TODAY)
+        self.assertEqual(menu.heading, "Denní menu 10.9.2026")
+        self.assertEqual(len(menu.items), 2)
+
+    @patch("scrapers.vodni.requests.get")
+    def test_fails_when_the_page_is_stale(self, get: Mock) -> None:
+        html = self.HTML.replace("9.9.2026", "8.9.2026")
+        get.return_value.text = html
+        get.return_value.content = html.encode()
+        get.return_value.apparent_encoding = "utf-8"
+        get.return_value.encoding = "utf-8"
+        get.return_value.raise_for_status.return_value = None
+        with self.assertRaisesRegex(ValueError, "8.9.2026"):
             fetch_vodni_menu("https://example.test/", TODAY)
 
 
@@ -102,6 +116,20 @@ class LamusicaParserTest(unittest.TestCase):
         menu = fetch_lamusica_menu("https://restauracelamusica.cz/denni-menu/", TODAY)
         self.assertEqual([item.name for item in menu.items], ["Polévka: Krém"])
         self.assertEqual(menu.items[0].description, "smetana")
+
+    @patch("scrapers.lamusica.requests.get")
+    def test_accepts_next_day_menu(self, get: Mock) -> None:
+        get.return_value.text = self.HTML.replace("Středa 9. 9. 2026", "Čtvrtek 10. 9. 2026")
+        get.return_value.raise_for_status.return_value = None
+        menu = fetch_lamusica_menu("https://restauracelamusica.cz/denni-menu/", TODAY)
+        self.assertIn("10. 9. 2026", menu.heading)
+
+    @patch("scrapers.lamusica.requests.get")
+    def test_fails_when_the_page_is_stale(self, get: Mock) -> None:
+        get.return_value.text = self.HTML.replace("Středa 9. 9. 2026", "Úterý 8. 9. 2026")
+        get.return_value.raise_for_status.return_value = None
+        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+            fetch_lamusica_menu("https://restauracelamusica.cz/denni-menu/", TODAY)
 
 
 class ArcoParserTest(unittest.TestCase):
@@ -162,6 +190,14 @@ class NasidlistiParserTest(unittest.TestCase):
         self.assertEqual(menu.items[0].allergens, "1")
         self.assertEqual(menu.items[0].price, "49 Kč")
         self.assertTrue(get.call_args[0][0].endswith("/denni-menu/fragment"))
+
+    @patch("scrapers.nasidlisti.requests.get")
+    def test_fails_when_the_fragment_is_stale(self, get: Mock) -> None:
+        stale = {**self.FRAGMENT, "html": self.FRAGMENT["html"].replace("2026-09-09", "2026-09-08")}
+        get.return_value.text = json.dumps(stale)
+        get.return_value.raise_for_status.return_value = None
+        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+            fetch_nasidlisti_menu("https://www.nasidlisti1962.cz/#dnesni-menu", TODAY)
 
 
 class StoletaParserTest(unittest.TestCase):
@@ -225,6 +261,20 @@ class KatolakParserTest(unittest.TestCase):
         self.assertEqual(menu.items[1].price, "189 Kč")
         self.assertEqual(menu.items[1].description, "150g")
         self.assertEqual(menu.image_url, "https://be.katolak.cz/menu/today/page/0")
+
+    @patch("scrapers.katolak.requests.get")
+    def test_accepts_next_day_menu_and_labels_it(self, get: Mock) -> None:
+        get.return_value.json.return_value = {**self.PAYLOAD, "forDate": "2026-09-10"}
+        get.return_value.raise_for_status.return_value = None
+        menu = fetch_katolak_menu("https://katolak.cz/", TODAY)
+        self.assertEqual(menu.heading, "Denní menu 10.9.2026")
+
+    @patch("scrapers.katolak.requests.get")
+    def test_fails_when_the_api_is_stale(self, get: Mock) -> None:
+        get.return_value.json.return_value = {**self.PAYLOAD, "forDate": "2026-09-08"}
+        get.return_value.raise_for_status.return_value = None
+        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+            fetch_katolak_menu("https://katolak.cz/", TODAY)
 
 
 if __name__ == "__main__":

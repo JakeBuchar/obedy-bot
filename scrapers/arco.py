@@ -11,7 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import text_has_date, today_prague
+from .prague import parse_czech_date, reject_stale, today_prague
 
 
 def fetch_arco_menu(url: str, today: date | None = None, timeout: int = 20) -> Menu:
@@ -33,8 +33,7 @@ def fetch_arco_menu(url: str, today: date | None = None, timeout: int = 20) -> M
         raise ValueError("Arco daily lunch heading was not found")
 
     heading = " ".join(heading_tag.get_text(" ", strip=True).split())
-    if not text_has_date(heading, today):
-        raise ValueError(f"Arco has no polední menu published for {today.day}.{today.month}.{today.year}")
+    reject_stale(parse_czech_date(heading), today, "Arco")
 
     wrap = heading_tag.find_parent(class_="elementor-widget-wrap")
     price_list = wrap.select_one("ul.elementor-price-list") if wrap else None

@@ -11,9 +11,10 @@ from urllib.parse import urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import today_prague
+from .prague import reject_stale, today_prague
 
 FRAGMENT_PATH = "/denni-menu/fragment"
 
@@ -32,11 +33,7 @@ def fetch_nasidlisti_menu(url: str, today: date | None = None, timeout: int = 20
     soup = BeautifulSoup(html, "html.parser")
 
     head = soup.select_one(".today-head")
-    published = (head.get("data-menu-date") if head else "") or ""
-    if published != today.isoformat():
-        raise ValueError(
-            f"Na Sídlišti has no daily menu published for {today.isoformat()} (got {published or 'none'})"
-        )
+    reject_stale(_published_date(head), today, "Na Sídlišti")
 
     date_label = head.select_one(".today-date") if head else None
     heading = " ".join(date_label.get_text(" ", strip=True).split()) if date_label else today.isoformat()
@@ -61,3 +58,11 @@ def fetch_nasidlisti_menu(url: str, today: date | None = None, timeout: int = 20
         raise ValueError("Na Sídlišti daily menu contains no dishes")
 
     return Menu(heading=heading, items=items, raw_text=soup.get_text(" ", strip=True))
+
+
+def _published_date(head: Tag | None) -> date | None:
+    raw = (head.get("data-menu-date") if head else "") or ""
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
