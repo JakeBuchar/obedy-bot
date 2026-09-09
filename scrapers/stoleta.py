@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 
 import requests
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 from .prague import czech_weekday, monday_of, today_prague
 
@@ -38,11 +39,10 @@ def fetch_stoleta_menu(url: str, today: date | None = None, timeout: int = 20) -
         "day_of_week": f"eq.{today.weekday()}",
         "order": "order_in_category.asc",
     }
-    response = requests.get(
-        f"{supabase_url}/rest/v1/menu_items",
-        headers=headers,
-        params=params,
-        timeout=timeout,
+    menu_url = f"{supabase_url}/rest/v1/menu_items"
+    response = with_retries(
+        lambda: requests.get(menu_url, headers=headers, params=params, timeout=timeout),
+        menu_url,
     )
     response.raise_for_status()
     rows = response.json()
@@ -68,12 +68,15 @@ def fetch_stoleta_menu(url: str, today: date | None = None, timeout: int = 20) -
 
 
 def _supabase_config(page_url: str, timeout: int) -> tuple[str, str]:
-    page = requests.get(page_url, headers=BROWSER_HEADERS, timeout=timeout)
+    page = with_retries(lambda: requests.get(page_url, headers=BROWSER_HEADERS, timeout=timeout), page_url)
     page.raise_for_status()
     script = INDEX_JS_RE.search(page.text)
     if not script:
         raise ValueError("Stoletá frontend bundle was not found")
-    bundle = requests.get(urljoin(page_url, script.group(1)), headers=BROWSER_HEADERS, timeout=timeout)
+    bundle_url = urljoin(page_url, script.group(1))
+    bundle = with_retries(
+        lambda: requests.get(bundle_url, headers=BROWSER_HEADERS, timeout=timeout), bundle_url
+    )
     bundle.raise_for_status()
     supabase_url = SUPABASE_URL_RE.search(bundle.text)
     anon_key = ANON_KEY_RE.search(bundle.text)

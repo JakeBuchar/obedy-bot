@@ -16,13 +16,14 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 
 CZECH_WEEKDAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
 
 
 def fetch_choiceqr_menu(url: str, timeout: int = 20) -> Menu:
-    resp = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+    resp = with_retries(lambda: requests.get(url, headers=BROWSER_HEADERS, timeout=timeout), url)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 

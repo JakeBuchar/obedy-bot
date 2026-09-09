@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 import requests
 from bs4 import BeautifulSoup
 
+from .http import with_retries
+
 BROWSER_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -49,7 +51,7 @@ class Menu:
 
 def fetch_menubot_menu(menubot_hash: str, lang: str = "_a", timeout: int = 20) -> Menu:
     url = f"https://www.menubot.cz/app/users/{menubot_hash}/export/dailymenu{lang}.js"
-    resp = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+    resp = with_retries(lambda: requests.get(url, headers=BROWSER_HEADERS, timeout=timeout), url)
     resp.raise_for_status()
 
     fragment_html = _extract_document_write_html(resp.text)
