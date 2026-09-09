@@ -197,7 +197,7 @@ class KatolakParserTest(unittest.TestCase):
         "pages": [
             {
                 "spans": [
-                    {"text": "Restaurace"},
+                    {"text": "k výhodnému menu 0,2l limonády zdarma"},
                     {"text": "polévky"},
                     {"text": "Polévka zeleninová"},
                     {"text": "(1)"},

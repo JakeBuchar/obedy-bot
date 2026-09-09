@@ -21,7 +21,7 @@ ALLERGEN_RE = re.compile(r"^\([\d,\s]+\)$")
 SIZE_RE = re.compile(r"^(?:\d+\s*(?:g|ks|ml)|1ks)$", re.IGNORECASE)
 SKIP_RE = re.compile(
     r"^(restaurace|obecní dům|polévky|dnes nabízíme|výhodná menu|menu \d+\)|"
-    r"objednávky|k výhodnému|-+)$",
+    r"objednávky|k výhodnému)",
     re.IGNORECASE,
 )
 
