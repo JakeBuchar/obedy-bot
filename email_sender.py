@@ -26,7 +26,14 @@ def send_email(subject: str, html_body: str, text_body: str = "") -> None:
     user = os.environ["SMTP_USER"]
     password = os.environ["SMTP_PASSWORD"]
     mail_from = os.environ.get("MAIL_FROM", user)
-    recipients = [addr.strip() for addr in os.environ["MAIL_TO"].split(",") if addr.strip()]
+    recipients = [addr.strip() for addr in os.environ.get("MAIL_TO", "").split(",") if addr.strip()]
+    # An unset secret arrives as an empty string, so without this the run
+    # would get all the way to SMTP and fail there with "recipients refused".
+    if not recipients:
+        raise ValueError(
+            "MAIL_TO is empty - set the recipient secret for this city "
+            "(MAIL_TO for Praha, MAIL_TO_KOLIN for Kolín)"
+        )
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
