@@ -9,11 +9,12 @@ from __future__ import annotations
 import requests
 from bs4 import BeautifulSoup
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 
 
 def fetch_laventola_menu(url: str, timeout: int = 20) -> Menu:
-    response = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+    response = with_retries(lambda: requests.get(url, headers=BROWSER_HEADERS, timeout=timeout), url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     scope = soup.select_one("#menu")

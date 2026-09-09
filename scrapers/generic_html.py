@@ -12,6 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, MenuItem, Menu
 
 MENU_HINT_RE = re.compile(r"menu", re.IGNORECASE)
@@ -26,7 +27,7 @@ def fetch_generic_menu(
     image_selector: str = "",
     timeout: int = 20,
 ) -> Menu:
-    resp = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+    resp = with_retries(lambda: requests.get(url, headers=BROWSER_HEADERS, timeout=timeout), url)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
     for tag in soup(["script", "style"]):

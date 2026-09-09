@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 from .prague import reject_stale, today_prague
 
@@ -25,7 +26,9 @@ def fetch_nasidlisti_menu(url: str, today: date | None = None, timeout: int = 20
     origin = urlunsplit((parts.scheme, parts.netloc, "", "", ""))
     fragment_url = origin + FRAGMENT_PATH
     headers = {**BROWSER_HEADERS, "Accept": "application/json, text/html;q=0.8"}
-    response = requests.get(fragment_url, headers=headers, timeout=timeout)
+    response = with_retries(
+        lambda: requests.get(fragment_url, headers=headers, timeout=timeout), fragment_url
+    )
     response.raise_for_status()
 
     payload = json.loads(response.text)

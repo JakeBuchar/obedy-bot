@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 
 PRAGUE = ZoneInfo("Europe/Prague")
@@ -24,7 +25,7 @@ def fetch_govinda_menu(
     today: date | None = None,
     timeout: int = 20,
 ) -> Menu:
-    response = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+    response = with_retries(lambda: requests.get(url, headers=BROWSER_HEADERS, timeout=timeout), url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
 

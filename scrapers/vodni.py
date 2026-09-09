@@ -11,13 +11,14 @@ from datetime import date
 import requests
 from bs4 import BeautifulSoup
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 from .prague import format_date, parse_czech_date, reject_stale, today_prague
 
 
 def fetch_vodni_menu(url: str, today: date | None = None, timeout: int = 20) -> Menu:
     today = today_prague(today)
-    response = requests.get(url, headers=BROWSER_HEADERS, timeout=timeout)
+    response = with_retries(lambda: requests.get(url, headers=BROWSER_HEADERS, timeout=timeout), url)
     response.raise_for_status()
     response.encoding = response.apparent_encoding or response.encoding
     soup = BeautifulSoup(response.text, "html.parser")

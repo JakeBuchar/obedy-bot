@@ -10,6 +10,7 @@ from datetime import date
 
 import requests
 
+from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
 from .prague import format_date, reject_stale, today_prague
 
@@ -29,7 +30,9 @@ SKIP_RE = re.compile(
 def fetch_katolak_menu(url: str, today: date | None = None, timeout: int = 20) -> Menu:
     today = today_prague(today)
     headers = {**BROWSER_HEADERS, "Accept": "application/json"}
-    response = requests.get(API_VIEW_URL, headers=headers, timeout=timeout)
+    response = with_retries(
+        lambda: requests.get(API_VIEW_URL, headers=headers, timeout=timeout), API_VIEW_URL
+    )
     response.raise_for_status()
     payload = response.json()
 
