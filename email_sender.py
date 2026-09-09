@@ -16,11 +16,17 @@ from __future__ import annotations
 
 import os
 import smtplib
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
-def send_email(subject: str, html_body: str, text_body: str = "") -> None:
+def send_email(
+    subject: str,
+    html_body: str,
+    text_body: str = "",
+    inline_images: dict[str, bytes] | None = None,
+) -> None:
     host = os.environ["SMTP_HOST"]
     port = int(os.environ.get("SMTP_PORT", "465"))
     user = os.environ["SMTP_USER"]
@@ -28,14 +34,28 @@ def send_email(subject: str, html_body: str, text_body: str = "") -> None:
     mail_from = os.environ.get("MAIL_FROM", user)
     recipients = [addr.strip() for addr in os.environ["MAIL_TO"].split(",") if addr.strip()]
 
-    msg = MIMEMultipart("alternative")
+    body = MIMEMultipart("alternative")
+    if text_body:
+        body.attach(MIMEText(text_body, "plain", "utf-8"))
+    body.attach(MIMEText(html_body, "html", "utf-8"))
+
+    # Images referenced as cid: have to sit next to the body in a
+    # multipart/related container, otherwise clients treat them as plain
+    # attachments and the <img> tags stay empty.
+    if inline_images:
+        msg = MIMEMultipart("related")
+        msg.attach(body)
+        for content_id, data in inline_images.items():
+            image = MIMEImage(data, "png")
+            image.add_header("Content-ID", f"<{content_id}>")
+            image.add_header("Content-Disposition", "inline", filename=f"{content_id}.png")
+            msg.attach(image)
+    else:
+        msg = body
+
     msg["Subject"] = subject
     msg["From"] = mail_from
     msg["To"] = ", ".join(recipients)
-
-    if text_body:
-        msg.attach(MIMEText(text_body, "plain", "utf-8"))
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     with smtplib.SMTP_SSL(host, port) as server:
         server.login(user, password)
