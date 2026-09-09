@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import text_has_date, today_prague
+from .prague import format_date, parse_czech_date, reject_stale, today_prague
 
 
 def fetch_vodni_menu(url: str, today: date | None = None, timeout: int = 20) -> Menu:
@@ -26,15 +26,14 @@ def fetch_vodni_menu(url: str, today: date | None = None, timeout: int = 20) -> 
     if section is None:
         raise ValueError("Vodní svět daily menu section (#dennimenu) was not found")
 
-    heading_text = " ".join(section.get_text(" ", strip=True).split())
-    if not text_has_date(heading_text, today):
-        raise ValueError(f"Vodní svět has no daily menu published for {today.day}.{today.month}.{today.year}")
+    published = parse_czech_date(section.get_text(" ", strip=True))
+    reject_stale(published, today, "Vodní svět")
 
     place = section.select_one(".deme_place")
     if place is None:
         raise ValueError("Vodní svět daily dish list was not found")
 
-    heading = f"Denní menu {today.day}.{today.month}.{today.year}"
+    heading = f"Denní menu {format_date(published or today)}"
     items: list[MenuItem] = []
     category = ""
     for row in place.select(".deme_item"):

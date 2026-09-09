@@ -11,7 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import text_has_date, today_prague
+from .prague import parse_czech_date, reject_stale, today_prague
 
 
 def fetch_lamusica_menu(url: str, today: date | None = None, timeout: int = 20) -> Menu:
@@ -32,8 +32,7 @@ def fetch_lamusica_menu(url: str, today: date | None = None, timeout: int = 20) 
 
     if daily_block is None:
         raise ValueError("La Musica daily lunch block was not found")
-    if not text_has_date(heading, today):
-        raise ValueError(f"La Musica has no polední menu published for {today.day}.{today.month}.{today.year}")
+    reject_stale(parse_czech_date(heading), today, "La Musica")
 
     items: list[MenuItem] = []
     for card in daily_block.select(".tst-menu-book-item"):
