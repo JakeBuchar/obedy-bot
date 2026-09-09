@@ -1,4 +1,4 @@
-name: Daily lunch menu email
+name: Daily lunch menu email (Praha)
 
 "on":
   # These crons are a last-resort fallback, not the delivery mechanism.
@@ -48,6 +48,9 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SKIP_IF_SENT: ${{ inputs.skip_if_sent }}
+          CONFIG_PATH: config/praha.yaml
+          CITY: Praha
+          WORKFLOW_FILE: daily-menu.yml
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}

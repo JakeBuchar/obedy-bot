@@ -5,7 +5,9 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 
 ## Jak to funguje
 
-- `config/restaurants.yaml` – seznam restaurací a jejich "adaptér".
+- `config/praha.yaml` – restaurace pro Prahu (původní seznam).
+- `config/kolin.yaml` – restaurace pro Kolín (Vodní svět, Farina, La Musica,
+  Arco, Obecní dům, Na Sídlišti 1962, Stoletá).
 - `scrapers/menubot.py` – adaptér pro restaurace používající widget
   [menubot.cz](https://www.menubot.cz) (velmi rozšířené u českých restaurací –
   FUZE Praha i Han.sik ho oba používají, jen s jiným vzhledem šablony).
@@ -14,16 +16,19 @@ vybraných restaurací a pošle je e-mailem jako jeden přehledný souhrn.
 - `render.py` – poskládá HTML/text e-mail ze všech restaurací.
 - `email_sender.py` – odešle e-mail přes SMTP.
 - `main.py` – vše spustí a odešle.
-- `.github/workflows/daily-menu.yml` – spustí běh každý všední den ráno
-  přes GitHub Actions (běží zadarmo, i když je počítač vypnutý); e-mail
-  odejde hned, jak se běh rozjede.
+- `.github/workflows/daily-menu.yml` – Praha.
+- `.github/workflows/daily-menu-kolin.yml` – Kolín.
+
+Obě města běží ze stejného kódu. Liší se jen YAML, příjemce (`MAIL_TO` /
+`MAIL_TO_KOLIN`) a předmět e-mailu.
 
 ## Jak přidat další restauraci
 
 **Pokud restaurace používá menubot.cz** (nejčastější případ – zkuste to
 první): otevřete stránku s denním menu, zobrazte zdrojový kód (Ctrl+U) a
 vyhledejte `menubot.cz/app/users/`. Hash je část za `/users/` a před
-`/export` nebo `/images`. Vložte do `config/restaurants.yaml`:
+`/export` nebo `/images`. Vložte do `config/praha.yaml` (Praha) nebo
+`config/kolin.yaml` (Kolín):
 
 ```yaml
   - name: "Nová restaurace"
@@ -60,6 +65,11 @@ pip install -r requirements.txt
 python main.py --dry-run
 # pak otevřete email_preview.html v prohlížeči (dvojklik / Open with)
 
+# totéž pro Kolín:
+$env:CONFIG_PATH="config/kolin.yaml"
+$env:CITY="Kolín"
+python main.py --dry-run
+
 # totéž co --dry-run, navíc otevře email_preview.html v prohlížeči:
 python main.py --preview
 
@@ -94,7 +104,9 @@ python main.py
 
 2. V repozitáři: **Settings → Secrets and variables → Actions → New
    repository secret** a vytvořte tyto secrets: `SMTP_HOST`, `SMTP_PORT`,
-   `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, `MAIL_TO`.
+   `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, `MAIL_TO`. Pro Kolín přidejte
+   ještě `MAIL_TO_KOLIN` (příjemci kolínského e-mailu; SMTP může zůstat
+   stejné).
 
 3. V záložce **Actions** můžete workflow "Daily lunch menu email" spustit
    manuálně (`workflow_dispatch` / tlačítko "Run workflow") a hned zkontrolovat,
@@ -160,6 +172,29 @@ python main.py
      );
    }
    ```
+
+   Stejný skript, druhá funkce pro Kolín (stejný `GH_TOKEN`, jiné workflow):
+
+   ```javascript
+   function sendMenuKolin() {
+     UrlFetchApp.fetch(
+       "https://api.github.com/repos/JakeBuchar/obedy-bot/actions/workflows/daily-menu-kolin.yml/dispatches",
+       {
+         method: "post",
+         headers: {
+           Authorization: "Bearer " + PropertiesService.getScriptProperties().getProperty("GH_TOKEN"),
+           Accept: "application/vnd.github+json",
+         },
+         payload: JSON.stringify({ ref: "master", inputs: { skip_if_sent: "true" } }),
+         contentType: "application/json",
+       },
+     );
+   }
+   ```
+
+   Stejné triggery Po–Pá, tentokrát na `sendMenuKolin`. Secret `MAIL_TO_KOLIN`
+   musí existovat a `config/kolin.yaml` nesmí být prázdný, jinak běh skončí
+   chybou a nic neodešle.
 
    Čas nastavte na požadovanou hodinu v zóně Europe/Prague, po–pá. Plánovač
    běží mimo GitHub, takže se ho zpoždění Actions netýká.

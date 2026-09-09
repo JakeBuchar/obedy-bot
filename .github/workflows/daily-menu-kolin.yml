@@ -1,0 +1,45 @@
+name: Daily lunch menu email (Kolín)
+
+"on":
+  # No GitHub cron on purpose: the Praha schedule is already late by hours.
+  # Kolín is dispatched the same way as Praha, from Apps Script.
+  workflow_dispatch:
+    inputs:
+      skip_if_sent:
+        description: "Skip when today's Kolín email already went out (for the external scheduler; leave off to always send)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  send-menu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send menu email
+        run: python main.py
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_IF_SENT: ${{ inputs.skip_if_sent }}
+          CONFIG_PATH: config/kolin.yaml
+          CITY: Kolín
+          WORKFLOW_FILE: daily-menu-kolin.yml
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO_KOLIN }}

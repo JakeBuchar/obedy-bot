@@ -99,7 +99,7 @@ def _item_html(item) -> str:
     )
 
 
-def render_html(results: list[dict], generated_at: datetime | None = None) -> str:
+def render_html(results: list[dict], generated_at: datetime | None = None, city: str = "Praha") -> str:
     sections = []
     for r in results:
         name = escape(r["name"])
@@ -168,7 +168,7 @@ def render_html(results: list[dict], generated_at: datetime | None = None) -> st
 <tr><td align="center">
 <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;">
 <tr><td style="padding:24px 16px;">
-<h1 style="font-size:20px;color:#444;font-family:{FONT};margin:0 0 16px;">🍽️ Dnešní obědové menu</h1>
+<h1 style="font-size:20px;color:#444;font-family:{FONT};margin:0 0 16px;">🍽️ Dnešní obědové menu ({escape(city)})</h1>
 {"".join(sections)}
 {footer_html}
 </td></tr>

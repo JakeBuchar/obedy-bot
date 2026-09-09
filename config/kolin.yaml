@@ -1,0 +1,41 @@
+# Kolín lunch menus. Completely separate from Praha (config/praha.yaml).
+# Order is the yaml list order (same as the HTML email).
+#
+# After merge: set the MAIL_TO_KOLIN secret and a second Apps Script trigger
+# (see README). SMTP can stay the same as Praha.
+
+restaurants:
+  - name: "Vodní svět"
+    url: "https://www.restaurace-vodni-svet.cz/"
+    adapter: "vodni"
+    logo_url: "https://www.restaurace-vodni-svet.cz/img/favicon.png"
+
+  - name: "Farina"
+    url: "https://farina.cz/poledni-menu/"
+    adapter: "farina"
+    logo_url: "https://farina.cz/wp-content/uploads/2025/07/favicon.png"
+
+  - name: "La Musica"
+    url: "https://restauracelamusica.cz/denni-menu/"
+    adapter: "lamusica"
+    logo_url: "https://restauracelamusica.cz/wp-content/uploads/2021/11/favicon.png"
+
+  - name: "Arco"
+    url: "https://restauracearco.cz/menu/denni-menu/"
+    adapter: "arco"
+    logo_url: "https://restauracearco.cz/wp-content/uploads/2024/10/cropped-3_IMG3349-1-180x180.webp"
+
+  - name: "Obecní dům"
+    url: "https://katolak.cz/"
+    adapter: "katolak"
+    logo_url: "https://katolak.cz/favicon.ico"
+
+  - name: "Na Sídlišti 1962"
+    url: "https://www.nasidlisti1962.cz/#dnesni-menu"
+    adapter: "nasidlisti"
+    logo_url: "https://www.nasidlisti1962.cz/apple-touch-icon.png"
+
+  - name: "Stoletá"
+    url: "https://stoleta.cz/menu"
+    adapter: "stoleta"
+    logo_url: "https://stoleta.cz/apple-touch-icon.png"

@@ -5,7 +5,9 @@ Run locally for testing:
     $env:SMTP_USER="you@gmail.com"
     $env:SMTP_PASSWORD="<app password>"
     $env:MAIL_TO="you@gmail.com"
-    python main.py
+    python main.py                    # Praha (default)
+    $env:CONFIG_PATH="config/kolin.yaml"
+    python main.py --dry-run          # Kolín
 
 Add --dry-run to skip sending the email, print the text result, and write
 email_preview.html (open that file to see the real HTML email). Add
@@ -25,13 +27,20 @@ import yaml
 from already_sent import already_sent_today
 from email_sender import send_email
 from render import render_html, render_text
+from scrapers.arco import fetch_arco_menu
 from scrapers.choiceqr import fetch_choiceqr_menu
+from scrapers.farina import fetch_farina_menu
 from scrapers.generic_html import fetch_generic_menu
 from scrapers.govinda import fetch_govinda_menu
+from scrapers.katolak import fetch_katolak_menu
+from scrapers.lamusica import fetch_lamusica_menu
 from scrapers.laventola import fetch_laventola_menu
 from scrapers.menubot import fetch_menubot_menu
+from scrapers.nasidlisti import fetch_nasidlisti_menu
+from scrapers.stoleta import fetch_stoleta_menu
+from scrapers.vodni import fetch_vodni_menu
 
-CONFIG_PATH = "config/restaurants.yaml"
+DEFAULT_CONFIG_PATH = "config/praha.yaml"
 PREVIEW_PATH = Path("email_preview.html")
 PRAGUE = ZoneInfo("Europe/Prague")
 
@@ -42,10 +51,18 @@ def write_preview(html_body: str) -> Path:
     return PREVIEW_PATH.resolve()
 
 
-def load_restaurants(path: str = CONFIG_PATH) -> list[dict]:
-    with open(path, encoding="utf-8") as f:
-        restaurants = yaml.safe_load(f)["restaurants"]
-    # Order is the yaml list order (Masaryčka is last on purpose).
+def config_path() -> str:
+    return os.environ.get("CONFIG_PATH", DEFAULT_CONFIG_PATH).strip() or DEFAULT_CONFIG_PATH
+
+
+def city_label() -> str:
+    return os.environ.get("CITY", "Praha").strip() or "Praha"
+
+
+def load_restaurants(path: str | None = None) -> list[dict]:
+    with open(path or config_path(), encoding="utf-8") as f:
+        restaurants = yaml.safe_load(f)["restaurants"] or []
+    # Order is the yaml list order (Masaryčka is last on purpose in Praha).
     return restaurants
 
 
@@ -79,6 +96,20 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
                 entry["menu"] = fetch_govinda_menu(r["url"])
             elif adapter == "laventola":
                 entry["menu"] = fetch_laventola_menu(r["url"])
+            elif adapter == "vodni":
+                entry["menu"] = fetch_vodni_menu(r["url"])
+            elif adapter == "farina":
+                entry["menu"] = fetch_farina_menu(r["url"])
+            elif adapter == "lamusica":
+                entry["menu"] = fetch_lamusica_menu(r["url"])
+            elif adapter == "arco":
+                entry["menu"] = fetch_arco_menu(r["url"])
+            elif adapter == "katolak":
+                entry["menu"] = fetch_katolak_menu(r["url"])
+            elif adapter == "nasidlisti":
+                entry["menu"] = fetch_nasidlisti_menu(r["url"])
+            elif adapter == "stoleta":
+                entry["menu"] = fetch_stoleta_menu(r["url"])
             else:
                 raise ValueError(f"Unknown adapter '{adapter}'")
             # Menu.image_url is auto-discovered fresh on every scrape (see
@@ -134,11 +165,15 @@ def main() -> None:
             return
 
     restaurants = load_restaurants()
+    if not restaurants:
+        print(f"No restaurants in {config_path()}; nothing to send.", flush=True)
+        raise SystemExit(1)
+
     results = scrape_all(restaurants)
 
     generated_at = datetime.now(PRAGUE)
     text_body = render_text(results, generated_at)
-    html_body = render_html(results, generated_at)
+    html_body = render_html(results, generated_at, city=city_label())
 
     if dry_run:
         preview_path = write_preview(html_body)
@@ -149,7 +184,7 @@ def main() -> None:
         fail_if_errors(results)
         return
 
-    subject = f"Obědové menu – {generated_at:%d.%m.%Y}"
+    subject = f"Obědové menu ({city_label()}) – {generated_at:%d.%m.%Y}"
     try:
         send_email(subject=subject, html_body=html_body, text_body=text_body)
     except Exception as exc:  # noqa: BLE001 - surface SMTP/config failures as a red job
