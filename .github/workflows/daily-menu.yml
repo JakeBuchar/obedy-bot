@@ -30,8 +30,10 @@ permissions:
 jobs:
   send-menu:
     runs-on: ubuntu-latest
-    # Scraping every restaurant takes seconds; anything longer is a hang.
-    timeout-minutes: 15
+    # Scraping every restaurant takes seconds, but a site that has gone quiet
+    # is retried for a couple of minutes. Being cut off mid-run would mean no
+    # email at all, which is worse than a slow one, so leave plenty of room.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
