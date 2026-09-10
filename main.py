@@ -36,8 +36,9 @@ from scrapers.govinda import fetch_govinda_menu
 from scrapers.katolak import fetch_katolak_menu
 from scrapers.lamusica import fetch_lamusica_menu
 from scrapers.laventola import fetch_laventola_menu
-from scrapers.prague import StaleMenuError
+from scrapers.menubot import fetch_menubot_menu
 from scrapers.nasidlisti import fetch_nasidlisti_menu
+from scrapers.prague import StaleMenuError
 from scrapers.stoleta import fetch_stoleta_menu
 from scrapers.vodni import fetch_vodni_menu
 
