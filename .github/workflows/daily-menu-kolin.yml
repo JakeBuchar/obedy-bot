@@ -1,8 +1,8 @@
 name: Daily lunch menu email (Kolín)
 
 "on":
-  # No GitHub cron on purpose: the Praha schedule is already late by hours.
-  # Kolín is dispatched the same way as Praha, from Apps Script.
+  # No GitHub cron on purpose, the same as Praha: scheduled runs land hours
+  # late. Kolín is dispatched from Apps Script, see README.
   workflow_dispatch:
     inputs:
       skip_if_sent:

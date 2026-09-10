@@ -1,10 +1,14 @@
 """Guard against sending the menu twice on the same day.
 
-The workflow schedules several crons because GitHub drops scheduled runs
-outright when its scheduler is busy (2026-08-27 never fired at all). The
-backups only help if they stay quiet once the menu is out, so each
-scheduled run asks the Actions API whether an earlier run today already
-finished successfully - every successful run has sent the email.
+A run started by the external scheduler asks the Actions API whether an
+earlier run today already finished successfully, so a retried dispatch does
+not deliver a second copy.
+
+Note what "successful" leaves out: a run that emailed the menu and then
+exited red over an unreachable restaurant does not count as sent. That is
+why the crons, back when they existed, sent a second copy on 2026-09-10.
+Clicking "Run workflow" by hand always sends - asking for a run means asking
+for an email.
 """
 from __future__ import annotations
 

@@ -179,10 +179,11 @@ def main() -> None:
     preview = "--preview" in sys.argv
     dry_run = "--dry-run" in sys.argv or preview
 
-    # Whichever trigger gets here first sends; the rest bail out. That
-    # covers both the backup crons and an external scheduler retrying its
-    # dispatch. Clicking "Run workflow" by hand leaves skip_if_sent unset
-    # and always sends - asking for a run means asking for an email.
+    # Whichever trigger gets here first sends; the rest bail out. That covers
+    # an external scheduler retrying its dispatch, and a scheduled run should
+    # anything ever put a cron back. Clicking "Run workflow" by hand leaves
+    # skip_if_sent unset and always sends - asking for a run means asking for
+    # an email.
     scheduled = os.environ.get("GITHUB_EVENT_NAME") == "schedule"
     skip_if_sent = os.environ.get("SKIP_IF_SENT", "").strip().lower() == "true"
     if (scheduled or skip_if_sent) and not dry_run:

@@ -1,20 +1,14 @@
 name: Daily lunch menu email (Praha)
 
 "on":
-  # These crons are a last-resort fallback, not the delivery mechanism.
-  # GitHub's scheduler stopped being usable here: since 2026-08-27 every
-  # scheduled run has started 3.5 to 12 hours after its cron time (the
-  # first send of the day landing between 13:43 and 15:02 local, i.e.
-  # after lunch), and on 2026-08-27 the crons did not fire at all.
+  # No GitHub cron on purpose, the same as Kolín. GitHub's scheduler starts
+  # these runs 3.5 to 12 hours late (on 2026-08-27 not at all), so as a
+  # fallback it only ever delivered the menu after lunch - and on 2026-09-10
+  # it sent a second copy at 13:50, because the morning delivery had exited
+  # red over two unreachable restaurants and so did not count as "sent".
   #
-  # Delivery therefore comes from an external scheduler that calls the
-  # workflow_dispatch API with skip_if_sent=true - dispatched runs start
-  # within seconds. See README for the setup. If that trigger ever fails,
-  # these crons still deliver the menu, just late.
-  schedule:
-    - cron: "47 6 * * 1-5"
-    - cron: "30 7 * * 1-5"
-    - cron: "20 8 * * 1-5"
+  # Delivery comes from an external scheduler calling the workflow_dispatch
+  # API, which starts within seconds. See README for the setup.
   workflow_dispatch:
     inputs:
       skip_if_sent:
