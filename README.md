@@ -194,17 +194,29 @@ python main.py
    }
    ```
 
-   Stejné triggery Po–Pá, tentokrát na `sendMenuKolin`. Secret `MAIL_TO_KOLIN`
-   musí existovat a `config/kolin.yaml` nesmí být prázdný, jinak běh skončí
-   chybou a nic neodešle.
+   Přidání funkce samo o sobě nic nespustí – **triggery se v Apps Scriptu
+   zakládají zvlášť ke každé funkci** (Triggers → Add trigger → Choose which
+   function to run → `sendMenuKolin`). Dokud Kolín svůj trigger nemá, běží
+   automaticky jen Praha; kolínské workflow záměrně nemá ani cron. Secret
+   `MAIL_TO_KOLIN` musí existovat a `config/kolin.yaml` nesmí být prázdný,
+   jinak běh skončí chybou a nic neodešle.
 
    Čas nastavte na požadovanou hodinu v zóně Europe/Prague, po–pá. Plánovač
    běží mimo GitHub, takže se ho zpoždění Actions netýká.
 
+   **Kolín se vyplatí spouštět později než Prahu.** La Musica a Arco
+   přepínají stránku na dnešní datum až kolem 10:00–10:30 (10. 9. 2026 v
+   10:00 měly obě ještě včerejší menu, v 10:26 už La Musica dnešní). Dřívější
+   odeslání u nich ukáže včerejší nabídku s upozorněním; trigger kolem 10:40
+   zastihne všech sedm restaurací aktuálních a je pořád před obědem.
+
    Když se e-mail nepodaří odeslat (SMTP, chybějící secrets) nebo když
-   u některé restaurace scrapování spadne, workflow skončí červeně, i
-   když zbytek menu v e-mailu odejde. GitHub pak pošle notifikaci o
-   failed runu (Settings → Notifications → Actions).
+   u některé restaurace scrapování spadne (nedostupný web, změněná šablona),
+   workflow skončí **červeně**, i když zbytek menu v e-mailu odejde. GitHub
+   pak pošle notifikaci o failed runu (Settings → Notifications → Actions).
+   Naopak restaurace, která jen ještě nezveřejnila dnešní menu, je **žluté
+   varování** a běh zůstává zelený – tohle za nás nikdo neopraví, takže
+   červená je vyhrazená pro věci, se kterými se dá něco dělat.
 
 ## Známá omezení
 
