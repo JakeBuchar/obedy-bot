@@ -123,14 +123,17 @@ python main.py
    spuštěný přes API (`workflow_dispatch`) startuje během několika sekund.
 
    Doručení proto řídí **externí plánovač**, který workflow spustí přes
-   API (návod níže). Crony v `daily-menu.yml` zůstávají jen jako záchranná
-   brzda – když externí spouštění selže, menu dorazí aspoň pozdě.
+   API (návod níže). Žádné z obou workflow už cron nemá – jako záchranná
+   brzda stejně doručoval až po obědě a 10. 9. 2026 poslal navíc druhý
+   e-mail ve 13:50: ranní odeslání toho dne skončilo červeně kvůli dvěma
+   nedostupným webům, takže se nepočítalo jako „už odesláno“. Když externí
+   spouštění vypadne, spusťte workflow ručně v Actions.
 
-   **Aby nepřišlo víc e-mailů najednou:** každý běh, který nespustil člověk
-   ručně, se nejdřív zeptá Actions API, jestli dnes už nějaký běh úspěšně
-   proběhl (viz `already_sent.py`); pokud ano, během pár sekund skončí.
-   Když se na to nepodaří odpovědět (výpadek API, chybějící token), e-mail
-   se raději pošle – duplikát je menší problém než žádné menu.
+   **Aby nepřišlo víc e-mailů najednou:** běh spuštěný plánovačem se nejdřív
+   zeptá Actions API, jestli dnes už nějaký běh **úspěšně** proběhl (viz
+   `already_sent.py`); pokud ano, během pár sekund skončí. Pozor, že běh
+   ukončený červeně se za odeslaný nepovažuje, i když e-mail odešel. Ruční
+   spuštění tlačítkem pošle vždycky.
 
 ### Externí spouštění (hlavní cesta doručení)
 
