@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 
 from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
+from .prague import StaleMenuError
 
 PRAGUE = ZoneInfo("Europe/Prague")
 ALLERGENS_RE = re.compile(r"\s*(\([\d,\s]+\))\s*$")
@@ -44,7 +45,7 @@ def fetch_govinda_menu(
         None,
     )
     if day_column is None:
-        raise ValueError(f"Góvinda has no menu published for {date_text}")
+        raise StaleMenuError(f"Góvinda has no menu published for {date_text}")
 
     heading_tag = day_column.find(["h3", "h4"])
     heading = heading_tag.get_text(" ", strip=True) if heading_tag else date_text

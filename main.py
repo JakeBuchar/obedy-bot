@@ -36,7 +36,7 @@ from scrapers.govinda import fetch_govinda_menu
 from scrapers.katolak import fetch_katolak_menu
 from scrapers.lamusica import fetch_lamusica_menu
 from scrapers.laventola import fetch_laventola_menu
-from scrapers.menubot import fetch_menubot_menu
+from scrapers.prague import StaleMenuError
 from scrapers.nasidlisti import fetch_nasidlisti_menu
 from scrapers.stoleta import fetch_stoleta_menu
 from scrapers.vodni import fetch_vodni_menu
@@ -77,6 +77,7 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
             "menu_image_url": None,
             "menu": None,
             "error": None,
+            "stale": False,
         }
         try:
             adapter = r["adapter"]
@@ -117,9 +118,15 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
             # generic_html.fetch_generic_menu), so the email always shows
             # whatever photo is currently live instead of a stale URL.
             entry["menu_image_url"] = entry["menu"].image_url or None
+        except StaleMenuError as exc:
+            # Restaurant is up, the page is just yesterday's menu. The email
+            # still shows a notice; the job stays green with a warning.
+            entry["error"] = str(exc)
+            entry["stale"] = True
+            print(f"::warning title={r['name']}::{exc}", flush=True)
         except Exception as exc:  # noqa: BLE001 - we want to keep going for other restaurants
             entry["error"] = str(exc)
-            print(f"ERROR {r['name']}: {exc}", flush=True)
+            print(f"::error title={r['name']}::{exc}", flush=True)
         results.append(entry)
     return results
 
@@ -128,22 +135,39 @@ def scrape_errors(results: list[dict]) -> list[tuple[str, str]]:
     return [(r["name"], r["error"]) for r in results if r.get("error")]
 
 
-def fail_if_errors(results: list[dict]) -> None:
-    """Turn the GitHub Actions run red when a restaurant scrape failed.
+def scrape_failures(results: list[dict]) -> list[tuple[str, str]]:
+    return [(r["name"], r["error"]) for r in results if r.get("error") and not r.get("stale")]
 
-    The email still goes out with whatever did scrape, so a single broken
-    adapter doesn't silence the rest. A green checkmark used to mean "the
-    script ran", including the 2026-08-24 scheduled runs that skipped the
-    send entirely - so a failed restaurant has to be a failed job.
+
+def scrape_stale(results: list[dict]) -> list[tuple[str, str]]:
+    return [(r["name"], r["error"]) for r in results if r.get("stale")]
+
+
+def fail_if_errors(results: list[dict]) -> None:
+    """Turn the GitHub Actions run red only when something on our side failed.
+
+    A restaurant that is still showing yesterday's menu is a warning
+    (`::warning::`, yellow in the Actions log) and does not fail the job.
+    Connection errors, parser mismatches and missing secrets still exit 1,
+    because those we can actually fix. The email goes out either way.
     """
-    errors = scrape_errors(results)
-    if not errors:
+    stale = scrape_stale(results)
+    if stale:
+        print(
+            f"{len(stale)} restaurant(s) have not published today's menu:",
+            flush=True,
+        )
+        for name, message in stale:
+            print(f"  - {name}: {message}", flush=True)
+
+    failures = scrape_failures(results)
+    if not failures:
         return
     print(
-        f"Failing the run: {len(errors)} restaurant(s) could not be scraped:",
+        f"Failing the run: {len(failures)} restaurant(s) could not be scraped:",
         flush=True,
     )
-    for name, message in errors:
+    for name, message in failures:
         print(f"  - {name}: {message}", flush=True)
     sys.exit(1)
 

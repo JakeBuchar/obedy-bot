@@ -3,6 +3,7 @@ from datetime import date
 from unittest.mock import Mock, patch
 
 from scrapers.govinda import fetch_govinda_menu
+from scrapers.prague import StaleMenuError
 
 
 HTML = """
@@ -39,7 +40,7 @@ class GovindaParserTest(unittest.TestCase):
         get.return_value.text = HTML
         get.return_value.raise_for_status.return_value = None
 
-        with self.assertRaisesRegex(ValueError, "26.8.2026"):
+        with self.assertRaisesRegex(StaleMenuError, "26.8.2026"):
             fetch_govinda_menu("https://example.test/#menu", date(2026, 8, 26))
 
 

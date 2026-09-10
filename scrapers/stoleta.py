@@ -14,7 +14,7 @@ import requests
 
 from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import czech_weekday, monday_of, today_prague
+from .prague import czech_weekday, monday_of, today_prague, StaleMenuError
 
 INDEX_JS_RE = re.compile(r'src="(/assets/index-[^"]+\.js)"')
 SUPABASE_URL_RE = re.compile(r"https://[a-z0-9]+\.supabase\.co")
@@ -47,7 +47,7 @@ def fetch_stoleta_menu(url: str, today: date | None = None, timeout: int = 20) -
     response.raise_for_status()
     rows = response.json()
     if not rows:
-        raise ValueError(f"Stoletá has no daily specials for {czech_weekday(today)} ({week_start})")
+        raise StaleMenuError(f"Stoletá has no daily specials for {czech_weekday(today)} ({week_start})")
 
     rows.sort(key=lambda row: (CATEGORY_ORDER.get(row.get("category") or "", 99), row.get("order_in_category") or 0))
     items = [

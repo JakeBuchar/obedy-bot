@@ -8,6 +8,7 @@ from scrapers.farina import fetch_farina_menu
 from scrapers.katolak import fetch_katolak_menu
 from scrapers.lamusica import fetch_lamusica_menu
 from scrapers.nasidlisti import fetch_nasidlisti_menu
+from scrapers.prague import StaleMenuError
 from scrapers.stoleta import fetch_stoleta_menu
 from scrapers.vodni import fetch_vodni_menu
 
@@ -62,7 +63,7 @@ class VodniParserTest(unittest.TestCase):
         get.return_value.apparent_encoding = "utf-8"
         get.return_value.encoding = "utf-8"
         get.return_value.raise_for_status.return_value = None
-        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+        with self.assertRaisesRegex(StaleMenuError, "8.9.2026"):
             fetch_vodni_menu("https://example.test/", TODAY)
 
 
@@ -128,7 +129,7 @@ class LamusicaParserTest(unittest.TestCase):
     def test_fails_when_the_page_is_stale(self, get: Mock) -> None:
         get.return_value.text = self.HTML.replace("Středa 9. 9. 2026", "Úterý 8. 9. 2026")
         get.return_value.raise_for_status.return_value = None
-        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+        with self.assertRaisesRegex(StaleMenuError, "8.9.2026"):
             fetch_lamusica_menu("https://restauracelamusica.cz/denni-menu/", TODAY)
 
 
@@ -196,7 +197,7 @@ class NasidlistiParserTest(unittest.TestCase):
         stale = {**self.FRAGMENT, "html": self.FRAGMENT["html"].replace("2026-09-09", "2026-09-08")}
         get.return_value.text = json.dumps(stale)
         get.return_value.raise_for_status.return_value = None
-        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+        with self.assertRaisesRegex(StaleMenuError, "8.9.2026"):
             fetch_nasidlisti_menu("https://www.nasidlisti1962.cz/#dnesni-menu", TODAY)
 
 
@@ -273,7 +274,7 @@ class KatolakParserTest(unittest.TestCase):
     def test_fails_when_the_api_is_stale(self, get: Mock) -> None:
         get.return_value.json.return_value = {**self.PAYLOAD, "forDate": "2026-09-08"}
         get.return_value.raise_for_status.return_value = None
-        with self.assertRaisesRegex(ValueError, "8.9.2026"):
+        with self.assertRaisesRegex(StaleMenuError, "8.9.2026"):
             fetch_katolak_menu("https://katolak.cz/", TODAY)
 
 
