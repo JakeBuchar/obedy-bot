@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 
 from .http import with_retries
 from .menubot import BROWSER_HEADERS, Menu, MenuItem
-from .prague import czech_weekday, today_prague
+from .prague import czech_weekday, today_prague, StaleMenuError
 
 PRICE_RE = re.compile(r"^\d[\d\s]*\s*Kč$", re.IGNORECASE)
 WEEKLY_HEADING = re.compile(r"týdenní", re.IGNORECASE)
@@ -38,7 +38,7 @@ def fetch_farina_menu(url: str, today: date | None = None, timeout: int = 20) ->
 
     weekday = czech_weekday(today)
     if weekday not in fields:
-        raise ValueError(f"Farina has no polední menu published for {weekday}")
+        raise StaleMenuError(f"Farina has no polední menu published for {weekday}")
 
     start = next((i for i, text in enumerate(fields) if DAILY_HEADING.search(text)), None)
     if start is None:

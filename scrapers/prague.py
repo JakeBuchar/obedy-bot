@@ -35,6 +35,16 @@ def parse_czech_date(text: str) -> date | None:
         return None
 
 
+class StaleMenuError(ValueError):
+    """The restaurant is reachable, but still showing a previous day's menu.
+
+    That is not something we can fix, so the email still carries a notice
+    and the GitHub Actions run stays green with a warning annotation. A red
+    job is reserved for failures on our side (the site unreachable, a parser
+    that no longer matches, a missing secret).
+    """
+
+
 def reject_stale(published: date | None, today: date, restaurant: str) -> None:
     """Refuse a menu the restaurant has not refreshed since a previous day.
 
@@ -43,7 +53,7 @@ def reject_stale(published: date | None, today: date, restaurant: str) -> None:
     worth emailing - only a date in the past means the page is stale.
     """
     if published is not None and published < today:
-        raise ValueError(
+        raise StaleMenuError(
             f"{restaurant} still shows the menu for {format_date(published)}, "
             f"not {format_date(today)}"
         )
