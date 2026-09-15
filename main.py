@@ -32,7 +32,6 @@ from scrapers.arco import fetch_arco_menu
 from scrapers.choiceqr import fetch_choiceqr_menu
 from scrapers.farina import fetch_farina_menu
 from scrapers.generic_html import fetch_generic_menu
-from scrapers.govinda import fetch_govinda_menu
 from scrapers.katolak import fetch_katolak_menu
 from scrapers.lamusica import fetch_lamusica_menu
 from scrapers.laventola import fetch_laventola_menu
@@ -95,8 +94,6 @@ def scrape_all(restaurants: list[dict]) -> list[dict]:
                 )
             elif adapter == "choiceqr":
                 entry["menu"] = fetch_choiceqr_menu(r["choiceqr_url"])
-            elif adapter == "govinda":
-                entry["menu"] = fetch_govinda_menu(r["url"])
             elif adapter == "laventola":
                 entry["menu"] = fetch_laventola_menu(r["url"])
             elif adapter == "vodni":
