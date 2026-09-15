@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import requests
 
-from scrapers.http import SiteUnreachable, with_retries
+from scrapers.http import SiteBlocked, SiteUnreachable, with_retries
 
 
 def _response(status_code: int) -> Mock:
@@ -74,6 +74,27 @@ class WithRetriesTest(unittest.TestCase):
 
         self.assertEqual(with_retries(send, "example.test", attempts=2).status_code, 503)
         self.assertEqual(send.call_count, 2)
+
+    @patch("scrapers.http.time.sleep")
+    def test_a_bot_check_says_so_instead_of_http_401(self, sleep: Mock) -> None:
+        send = Mock(return_value=_response(401))
+
+        with self.assertRaises(SiteBlocked) as caught:
+            with_retries(send, "https://govindarestaurace.cz/#menu")
+        self.assertEqual(
+            str(caught.exception),
+            "govindarestaurace.cz is turning this server away "
+            "(HTTP 401, most likely a bot check on the hosting)",
+        )
+        self.assertEqual(send.call_count, 1)
+        sleep.assert_not_called()
+
+    @patch("scrapers.http.time.sleep")
+    def test_a_forbidden_answer_is_reported_the_same_way(self, _sleep: Mock) -> None:
+        send = Mock(return_value=_response(403))
+
+        with self.assertRaises(SiteBlocked):
+            with_retries(send, "https://example.test/menu")
 
     @patch("scrapers.http.time.sleep")
     def test_a_refusal_is_not_retried(self, sleep: Mock) -> None:

@@ -12,6 +12,11 @@ and the job may take fifteen minutes, so waiting is nearly free.
 Retried are connection failures, timeouts, and the status codes a site
 returns when it is overloaded or rate-limiting rather than when it disagrees
 with the request. A 404 is left alone - asking again cannot change it.
+
+A site can also answer while refusing to serve us: Góvinda's hosting has
+been showing GitHub's addresses a WEDOS.protection bot check since
+2026-09-10, and a plain "401 Client Error" in the email says nothing about
+why. That case gets its own error, since no retry or parser change fixes it.
 """
 from __future__ import annotations
 
@@ -27,12 +32,17 @@ ATTEMPTS = 5
 BACKOFF_SECONDS = 4.0
 MAX_BACKOFF_SECONDS = 30.0
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+BLOCKED_STATUSES = frozenset({401, 403})
 
 T = TypeVar("T")
 
 
 class SiteUnreachable(RuntimeError):
     """A site refused every attempt, so there is no menu to parse."""
+
+
+class SiteBlocked(RuntimeError):
+    """The site answered, but turned this server away instead of serving it."""
 
 
 def prefer_ipv4() -> None:
@@ -65,9 +75,15 @@ def with_retries(send: Callable[[], T], description: str, attempts: int = ATTEMP
                 ) from exc
             _announce(description, type(exc).__name__, attempt, attempts)
         else:
-            if last_attempt or getattr(response, "status_code", None) not in RETRY_STATUSES:
+            status = getattr(response, "status_code", None)
+            if status in BLOCKED_STATUSES:
+                raise SiteBlocked(
+                    f"{_host(description)} is turning this server away "
+                    f"(HTTP {status}, most likely a bot check on the hosting)"
+                )
+            if last_attempt or status not in RETRY_STATUSES:
                 return response
-            _announce(description, f"HTTP {response.status_code}", attempt, attempts)
+            _announce(description, f"HTTP {status}", attempt, attempts)
         time.sleep(min(BACKOFF_SECONDS * 2 ** (attempt - 1), MAX_BACKOFF_SECONDS))
     raise AssertionError("unreachable")
 
