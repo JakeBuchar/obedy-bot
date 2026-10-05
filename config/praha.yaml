@@ -25,6 +25,10 @@
 #   Pizzeria La Ventola lunch menu at laventola.cz/#menu. Dedupes the
 #   widget's duplicated tab markup so each dish appears once.
 #
+# adapter: farina
+#   Farina's JetEngine listing at farina.cz/poledni-menu/. Takes the dishes
+#   under "Denní nabídka" and stops before "Týdenní nabídka".
+#
 # image_selector (optional, "html" adapter only)
 #   When the daily menu is published purely as a photo (no text markup to
 #   scrape), the "html" adapter auto-detects the menu photo on every run by
@@ -84,6 +88,11 @@ restaurants:
     adapter: "menubot"
     menubot_hash: "sia484626412569856654"
     logo_url: "https://cdn.myshoptet.com/usr/www.siarestaurant.cz/user/logos/sialogo.svg"
+
+  - name: "Farina"
+    url: "https://farina.cz/poledni-menu/"
+    adapter: "farina"
+    logo_url: "https://farina.cz/wp-content/uploads/2025/07/favicon.png"
 
   - name: "Masaryčka Restaurace"
     url: "https://www.masaryckarestaurace.cz/"

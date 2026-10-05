@@ -91,6 +91,17 @@ class FarinaParserTest(unittest.TestCase):
         self.assertEqual([item.name for item in menu.items], ["Minestrone", "Lasagne"])
         self.assertEqual(menu.heading, "Středa · 10:30 - 14:00")
 
+    @patch("scrapers.farina.requests.get")
+    def test_closed_day_is_a_notice_not_a_broken_page(self, get: Mock) -> None:
+        get.return_value.text = """
+        <div class="jet-listing-not-found">Dnes polední menu nenabízíme.</div>
+        """
+        get.return_value.raise_for_status.return_value = None
+
+        with self.assertRaises(StaleMenuError) as caught:
+            fetch_farina_menu("https://farina.cz/poledni-menu/", TODAY)
+        self.assertIn("nenabízíme", str(caught.exception))
+
 
 class LamusicaParserTest(unittest.TestCase):
     HTML = """
