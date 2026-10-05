@@ -10,11 +10,6 @@ restaurants:
     adapter: "vodni"
     logo_url: "https://www.restaurace-vodni-svet.cz/img/favicon.png"
 
-  - name: "Farina"
-    url: "https://farina.cz/poledni-menu/"
-    adapter: "farina"
-    logo_url: "https://farina.cz/wp-content/uploads/2025/07/favicon.png"
-
   - name: "La Musica"
     url: "https://restauracelamusica.cz/denni-menu/"
     adapter: "lamusica"
