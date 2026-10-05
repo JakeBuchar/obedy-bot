@@ -28,6 +28,12 @@ def fetch_farina_menu(url: str, today: date | None = None, timeout: int = 20) ->
 
     listing = soup.select_one(".jet-listing-grid__item")
     if listing is None:
+        missing = soup.select_one(".jet-listing-not-found")
+        if missing:
+            # The listing only renders a post for the current day. An empty
+            # result is the restaurant's own "we are not serving lunch today".
+            notice = " ".join(missing.get_text(" ", strip=True).split())
+            raise StaleMenuError(notice or f"Farina has no polední menu published for {czech_weekday(today)}")
         raise ValueError("Farina polední menu listing was not found")
 
     fields: list[str] = []
